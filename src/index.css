@@ -1,8 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --font-display: "Cinzel", "Times New Roman", serif;
+}
+
 @layer base {
+  :root {
+    --p: 0;                                              /* smoothed scroll progress 0..1 */
+    --b: 0;
+    --ink: #f3ede8;
+  }
   body {
-    background-color: var(--color-neutral-950);
-    color: var(--color-neutral-50);
+    background-color: #2a1421;
+    color: #f3ede8;
+    font-family: "Inter", system-ui, sans-serif;
   }
 }
+
+/* Type colour follows the backdrop: cream on plum, plum on cream. */
+.ink, .site-header { color: var(--ink); }
+.pill { border-color: color-mix(in oklab, var(--ink) 45%, transparent); }
+.pill:hover { background: var(--ink); color: #3a1730; }
+.mark { display: inline-block; background: currentColor; -webkit-mask: url('/brand-mark.svg') center / contain no-repeat; mask: url('/brand-mark.svg') center / contain no-repeat; }
+
+/* Coming soon */
+.cs { color: var(--ink); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* stag + lettering: as wide as the screen allows while the whole group (~1.08× its width tall) still fits */
+.cs-logo { width: min(88vw, 46rem, 68svh); margin-bottom: 2svh; }
+

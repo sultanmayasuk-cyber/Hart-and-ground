@@ -3,8 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hartandground</title>
+    <!-- the stag's 40k grains: start downloading before the JS asks for them -->
+    <link rel="preload" href="/stag-points.bin" as="fetch" type="application/octet-stream" crossorigin="anonymous" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2a1421" />
+    <meta name="description" content="Hart &amp; Ground, cafe &amp; roasters at 65A, London. Coffee roasted with heat, matcha grown in shade. Coming soon." />
+    <title>Hart &amp; Ground · Cafe &amp; Roasters, London</title>
   </head>
   <body>
     <div id="root"></div>
