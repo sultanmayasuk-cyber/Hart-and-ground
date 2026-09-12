@@ -38,7 +38,8 @@ const frag = /* glsl */ `
 export const bg = { blend: 0 } // 0 = plum world, 1 = cream world (shared with the DOM via --b)
 
 // `focus` (screen uv, read every frame) centres the dark world's warm pool; defaults to behind the hero stag.
-export default function Backdrop({ focus }: { focus?: { x: number; y: number } }) {
+// `warm` (read every frame) tints that pool.
+export default function Backdrop({ focus, warm }: { focus?: { x: number; y: number }; warm?: Color }) {
   const mat = useRef<ShaderMaterial>(null)
   const uniforms = useMemo(
     () => ({
@@ -65,6 +66,7 @@ export default function Backdrop({ focus }: { focus?: { x: number; y: number } }
     // the warm pool drifts from behind the stag to behind the cups
     void p
     if (focus) m.uniforms.uFocus.value = [focus.x, focus.y]
+    if (warm) m.uniforms.uWarm.value.copy(warm)
     m.uniforms.uTime.value = state.clock.elapsedTime
     m.uniforms.uAspect.value = state.size.width / state.size.height
     m.uniforms.uCups.value = Math.min(1, Math.max(0, (p - 0.05) / 0.2))

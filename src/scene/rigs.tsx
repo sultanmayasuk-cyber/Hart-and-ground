@@ -2,13 +2,13 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { damp, pointer } from './pointer'
 
-// Fixed camera with a little mouse parallax. The cups are DOM images, so the camera never moves.
-export function CameraRig() {
+// Fixed camera with a little mouse parallax, optionally raised to look down on the scene.
+export function CameraRig({ height = 0, lookY = 0 }: { height?: number; lookY?: number }) {
   const { camera } = useThree()
   useFrame((_, dt) => {
     camera.position.x = damp(camera.position.x, pointer.sx * 0.12, 3, dt)
-    camera.position.y = damp(camera.position.y, pointer.sy * 0.08, 3, dt)
-    camera.lookAt(0, 0, 0)
+    camera.position.y = damp(camera.position.y, height + pointer.sy * 0.08, 3, dt)
+    camera.lookAt(0, lookY, 0)
   })
   return null
 }

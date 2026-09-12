@@ -2,6 +2,8 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Group, Mesh, MeshStandardMaterial } from 'three'
+import CupPrint from './CupPrint'
+import { finishCup } from './cupFinish'
 import { cupsWorld } from './cups'
 import { damp, pointer } from './pointer'
 import { P_HOLD_END, pageOffset, scroll, VIEW_H } from './scroll'
@@ -58,6 +60,7 @@ function Cup({ which }: { which: 'matcha' | 'coffee' }) {
         const m = o.material as MeshStandardMaterial
         m.envMapIntensity = 1.4
         m.roughness = Math.min(m.roughness, 0.55)
+        finishCup(m, which)
         o.castShadow = false
       }
     })
@@ -65,6 +68,7 @@ function Cup({ which }: { which: 'matcha' | 'coffee' }) {
   return (
     <group ref={ref} position={[0, -5, 0]}>
       <primitive object={scene} />
+      <CupPrint />
     </group>
   )
 }

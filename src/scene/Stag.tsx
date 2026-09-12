@@ -20,7 +20,6 @@ import {
 import { pointer } from './pointer'
 import { cupsWorld } from './cups'
 import { P_CENTER, pageOffset, scroll } from './scroll'
-import { shedState } from './shed'
 
 // ~40k grains simulated on the GPU (ping-pong position/velocity textures).
 // Home A = the stag mark (world space). Home B = piles inside the two cups. Scroll morphs A → B.
@@ -29,21 +28,13 @@ const SIZE = 200 // 200*200 = 40000 grains
 export type StagLayout = { x: number; y: number; scale: number }
 const HERO_LAYOUT: StagLayout = { x: 1.05, y: 0.05, scale: 0.95 }
 
-// Shared by the simulation and the renderer: which grains shed (antlers and leaves; u runs base → tips),
-// and when each one regrows, the base of the antler first, the leaf tips last.
-const shedGlsl = /* glsl */ `
-  float shedAntler(float u, float leaf) { return max(smoothstep(0.55, 0.7, u), leaf); }
-  float shedRegrow(float u, float leaf, float seed) { return 1.1 + (u - 0.55) * 2.4 + leaf * 0.4 + seed * 0.3; }
-`
-
 const simVert = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`
 
 const velFrag = /* glsl */ `
   uniform sampler2D tPos, tVel, tHomeA, tHomeB, tData;
-  uniform float uTime, uSim, uDt, uScroll, uScrollRaw, uCursorOn, uRot, uMatchaScale, uCoffeeScale, uDir, uPageY, uDiveStart, uDiveSpan, uStagScale, uShedT;
+  uniform float uTime, uSim, uDt, uScroll, uScrollRaw, uCursorOn, uRot, uMatchaScale, uCoffeeScale, uDir, uPageY, uDiveStart, uDiveSpan, uStagScale;
   uniform vec3 uCursor, uCursorVel, uMatchaPos, uCoffeePos, uPivot;
   varying vec2 vUv;
-  ${shedGlsl}
   void main() {
     vec3 p = texture2D(tPos, vUv).xyz;
     vec3 v = texture2D(tVel, vUv).xyz;
@@ -71,20 +62,9 @@ const velFrag = /* glsl */ `
     // entrance: springs switch on one by one over the first ~2s; hovering grains are held loosely
     float on = step(seed * 2.0, uTime);
     float k = mix(12.0, 8.0, leave) * on;
-    // shed (uShedT = seconds since the tap): the antlers come away almost whole and fall,
-    // then regrow in order from the base out to the tips
-    float antler = shedAntler(dat.x, dat.y);
-    float regrow = shedRegrow(dat.x, dat.y, seed);
-    float loose = antler * step(0.0, uShedT) * (1.0 - smoothstep(regrow, regrow + 0.5, uShedT));
-    k *= 1.0 - loose;
     vec3 f = (target - p) * k;
-    vec3 rnd = normalize(vec3(fract(seed * 13.0) - 0.5, fract(seed * 29.0) - 0.5, fract(seed * 47.0) - 0.5) + 1e-3);
-    float kick = step(0.0, uShedT) * exp(-uShedT * 12.0);
-    f += normalize(vec3(p.x - uPivot.x, 0.5, 0.0) + rnd * 0.35) * antler * kick * 26.0;
-    f += rnd * (1.0 - antler) * kick * 8.0;            // the body flinches
-    f.y -= loose * mix(5.0, 1.6, dat.y);               // antlers drop, leaves float down
-    f.x += loose * dat.y * sin(uTime * 2.6 + seed * 30.0) * 1.4;
     // burst outward as the stag shatters
+    vec3 rnd = normalize(vec3(fract(seed * 13.0) - 0.5, fract(seed * 29.0) - 0.5, fract(seed * 47.0) - 0.5) + 1e-3);
     f += rnd * leave * (1.0 - leave) * 40.0 * uDir;
     // drift in the cloud
     f += vec3(sin(uTime * 0.9 + seed * 20.0), cos(uTime * 0.7 + seed * 30.0), sin(uTime * 0.8 + seed * 40.0)) * 0.6 * leave * (1.0 - m);
@@ -99,7 +79,7 @@ const velFrag = /* glsl */ `
     // swirl only while a grain is away from home, so the body settles still
     float away = clamp(length(target - p) * 2.0, 0.0, 1.0);
     vec3 n = vec3(sin(p.y * 3.0 + uTime * 1.5 + seed * 6.0), sin(p.z * 4.0 + uTime * 1.1 + seed * 3.0), sin(p.x * 3.5 + uTime * 1.3));
-    f += n * away * 2.5 * (1.0 - leave) * (1.0 - loose);
+    f += n * away * 2.5 * (1.0 - leave);
 
     // idle breathing (tiny)
     f += 0.06 * vec3(sin(uTime * 0.7 + seed * 6.28), cos(uTime * 0.6 + seed * 8.0), 0.0);
@@ -123,21 +103,17 @@ const posFrag = /* glsl */ `
 
 const vert = /* glsl */ `
   uniform sampler2D tPos, tData, tNormal;
-  uniform float uTime, uScroll, uScrollRaw, uScale, uGrain, uRot, uMatchaScale, uCoffeeScale, uShedT;
+  uniform float uTime, uScroll, uScrollRaw, uScale, uGrain, uRot, uMatchaScale, uCoffeeScale;
   uniform vec3 uMatchaPos, uCoffeePos;
   uniform vec3 uPlum, uCoffee, uGold, uMatcha, uGrounds, uCrema, uFoam;
   attribute vec2 aUv;
   varying float vAlpha, vSeed; varying vec3 vColor;
   float hash(float n) { return fract(sin(n) * 43758.5453); }
-  ${shedGlsl}
   void main() {
     vec3 p = texture2D(tPos, aUv).xyz;
     vec4 d = texture2D(tData, aUv); // u, leaf, seed, fill order
     float u = d.x, leaf = d.y, seed = d.z, order = d.w;
     float alpha = 1.0;
-    // shed: falling antlers crumble to dust, then fade back in as they regrow
-    float rg = shedRegrow(u, leaf, seed);
-    alpha *= 1.0 - 0.85 * shedAntler(u, leaf) * smoothstep(0.25, 0.85, uShedT) * (1.0 - smoothstep(rg, rg + 0.6, uShedT));
 
     float leave = smoothstep(0.0, 1.0, (uScrollRaw - seed * 0.012) / 0.045);
     // a few grains lift off the body like steam while the stag is whole
@@ -270,7 +246,6 @@ const rt = { type: FloatType, minFilter: NearestFilter, magFilter: NearestFilter
 
 export default function Stag({ layout = HERO_LAYOUT }: { layout?: StagLayout }) {
   const tex = useStagTextures()
-  const shedAt = useRef(-1)
   const { gl, camera, size } = useThree()
   const pos0 = useFBO(SIZE, SIZE, rt)
   const pos1 = useFBO(SIZE, SIZE, rt)
@@ -293,7 +268,7 @@ export default function Stag({ layout = HERO_LAYOUT }: { layout?: StagLayout }) 
         tPos: { value: null }, tVel: { value: null }, tHomeA: { value: null }, tHomeB: { value: null }, tData: { value: null },
         uTime: { value: 0 }, uSim: { value: 0 }, uDt: { value: 0 }, uScroll: { value: 0 }, uCursorOn: { value: 0 },
         uCursor: { value: new Vector3() }, uCursorVel: { value: new Vector3() }, uMatchaPos: { value: new Vector3() }, uCoffeePos: { value: new Vector3() },
-        uRot: { value: 0 }, uPivot: { value: new Vector3() }, uStagScale: { value: 1 }, uShedT: { value: 99 }, uMatchaScale: { value: 1.35 }, uCoffeeScale: { value: 1.35 }, uDir: { value: 1 }, uPageY: { value: 0 }, uDiveStart: { value: 0.1 }, uDiveSpan: { value: P_CENTER - 0.1 - 0.05 }, uScrollRaw: { value: 0 },
+        uRot: { value: 0 }, uPivot: { value: new Vector3() }, uStagScale: { value: 1 }, uMatchaScale: { value: 1.35 }, uCoffeeScale: { value: 1.35 }, uDir: { value: 1 }, uPageY: { value: 0 }, uDiveStart: { value: 0.1 }, uDiveSpan: { value: P_CENTER - 0.1 - 0.05 }, uScrollRaw: { value: 0 },
       },
     })
     const posMat = new ShaderMaterial({
@@ -317,7 +292,6 @@ export default function Stag({ layout = HERO_LAYOUT }: { layout?: StagLayout }) 
       uScrollRaw: { value: 0 },
       uScale: { value: 1 },
       uGrain: { value: 1 },
-      uShedT: { value: 99 },
       uMatchaPos: { value: new Vector3() },
       uCoffeePos: { value: new Vector3() },
       uMatchaScale: { value: 1.5 },
@@ -360,11 +334,6 @@ export default function Stag({ layout = HERO_LAYOUT }: { layout?: StagLayout }) 
     velMat.uniforms.uRot.value = rot
     velMat.uniforms.uPivot.value.set(layout.x, layout.y, 0)
     velMat.uniforms.uStagScale.value = layout.scale
-    if (shedState.queued) {
-      shedState.queued = false
-      shedAt.current = t
-    }
-    velMat.uniforms.uShedT.value = shedAt.current < 0 ? 99 : t - shedAt.current
     velMat.uniforms.uMatchaPos.value.copy(cupsWorld.matcha.center)
     velMat.uniforms.uCoffeePos.value.copy(cupsWorld.coffee.center)
     velMat.uniforms.uMatchaScale.value = cupsWorld.matcha.scale
@@ -418,7 +387,6 @@ export default function Stag({ layout = HERO_LAYOUT }: { layout?: StagLayout }) 
     u.uScrollRaw.value = scroll.progress
     u.uScale.value = (size.height * state.viewport.dpr) / 120
     u.uGrain.value = Math.pow(layout.scale / HERO_LAYOUT.scale, 0.75) // smaller stag, finer grains
-    u.uShedT.value = velMat.uniforms.uShedT.value
   })
 
   if (!tex) return null
