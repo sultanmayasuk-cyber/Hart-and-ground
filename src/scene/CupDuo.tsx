@@ -1,7 +1,7 @@
 import { ContactShadows, Environment, Lightformer, useGLTF } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, useRef } from 'react'
-import { CanvasTexture, Mesh, SRGBColorSpace, type Group, type MeshBasicMaterial, type MeshStandardMaterial } from 'three'
+import { CanvasTexture, Mesh, SRGBColorSpace, Texture, type Group, type MeshBasicMaterial, type MeshStandardMaterial } from 'three'
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
 import { CAM_Z, HERO_FOV } from './cups'
@@ -46,7 +46,8 @@ function asReflection(m: MeshStandardMaterial) {
 }
 
 // Layout shared by the headline and the cups, recomputed every frame from the viewport.
-const stage = { size: 1, X: 0.5, textW: 3, textH: 1.2, textY: 0, textAspect: 2.2 }
+// ready: textures uploaded and shaders compiled (see Warmup); nothing moves before that, so the entrance can't stutter
+const stage = { size: 1, X: 0.5, textW: 3, textH: 1.2, textY: 0, textAspect: 2.2, ready: false }
 function Layout() {
   useFrame((state) => {
     const vw = (VIEW_H * state.size.width) / state.size.height
@@ -96,6 +97,10 @@ function Headline() {
     const m = mesh.current
     if (!m) return
     const t = state.clock.elapsedTime
+    if (!stage.ready) {
+      ;(m.material as MeshBasicMaterial).opacity = 0
+      return
+    }
     if (born.current < 0) born.current = t
     const k = STILL ? 1 : smooth(clamp01((t - born.current - 0.2) / 1.6))
     m.scale.set(stage.textW, stage.textH, 1)
@@ -140,7 +145,7 @@ function Cup({ which, start }: { which: 'coffee' | 'matcha'; start: -1 | 1 }) {
 
   useFrame((state, rawDt) => {
     const o = g.current
-    if (!o) return
+    if (!o || !stage.ready) return // waits out of view (above the screen) until the warm-up is done
     const dt = Math.min(rawDt, 1 / 30)
     const t = state.clock.elapsedTime
     if (born.current < 0) born.current = t
@@ -230,6 +235,30 @@ function Cup({ which, start }: { which: 'coffee' | 'matcha'; start: -1 | 1 }) {
   )
 }
 
+// Once the cups have loaded: send every texture to the GPU and compile every shader up front (the cups are in the
+// scene, just parked above the screen), then let the entrance start. Doing that work on the first visible frames is
+// what made the cups hitch as they appeared.
+function Warmup() {
+  const { gl, scene, camera } = useThree()
+  useEffect(() => {
+    let alive = true
+    scene.traverse((o) => {
+      if (!(o instanceof Mesh)) return
+      for (const mat of Array.isArray(o.material) ? o.material : [o.material])
+        for (const v of Object.values(mat)) if (v instanceof Texture) gl.initTexture(v)
+    })
+    gl.compileAsync(scene, camera)
+      .catch(() => {})
+      .finally(() => {
+        if (alive) stage.ready = true
+      })
+    return () => {
+      alive = false
+    }
+  }, [gl, scene, camera])
+  return null
+}
+
 // Transparent canvas over the page's plum background: the headline and the two cups that circle it now and then.
 export default function CupDuo() {
   return (
@@ -245,6 +274,7 @@ export default function CupDuo() {
         <Suspense fallback={null}>
           <Cup which="coffee" start={-1} />
           <Cup which="matcha" start={1} />
+          <Warmup />
         </Suspense>
         {/* just under the counter, so a landing cup never cuts into its own shadow */}
         {/* wide enough to catch the cups out at the ends of their circle too */}
