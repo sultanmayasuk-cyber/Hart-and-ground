@@ -50,11 +50,14 @@ const stage = { size: 1, X: 0.5, textW: 3, textH: 1.2, textY: 0, textAspect: 2.2
 function Layout() {
   useFrame((state) => {
     const vw = (VIEW_H * state.size.width) / state.size.height
-    stage.size = Math.min(VIEW_H * 0.38, (vw * 0.34) / 0.78)
+    // 0 on landscape screens, 1 on a phone held upright: there the word sits lower and wider, the cups a bit bigger,
+    // so word and cups read as one group instead of a word up top and small cups far below
+    const portrait = clamp01((1 - state.size.width / state.size.height) / 0.45)
+    stage.size = Math.min(VIEW_H * 0.38, (vw * lerp(0.34, 0.42, portrait)) / 0.78)
     stage.X = stage.size * 0.62
-    stage.textH = Math.min(VIEW_H * 0.58, (vw * 0.84) / stage.textAspect)
+    stage.textH = Math.min(VIEW_H * 0.58, (vw * lerp(0.84, 0.92, portrait)) / stage.textAspect)
     stage.textW = stage.textH * stage.textAspect
-    stage.textY = TEXT_TOP - stage.textH / 2
+    stage.textY = lerp(TEXT_TOP, 0.05, portrait) - stage.textH / 2
   })
   return null
 }
