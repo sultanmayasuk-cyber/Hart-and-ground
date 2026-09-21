@@ -4,13 +4,13 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { CanvasTexture, Mesh, SRGBColorSpace, Texture, type Group, type MeshBasicMaterial, type MeshStandardMaterial } from 'three'
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
-import { CAM_Z, HERO_FOV } from './cups'
+import { CAM_Z, DRACO, HERO_FOV } from './cups'
 import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { VIEW_H } from './scroll'
 
-useGLTF.preload('/models/coffee.glb')
-useGLTF.preload('/models/matcha.glb')
+useGLTF.preload('/models/coffee.glb', DRACO)
+useGLTF.preload('/models/matcha.glb', DRACO)
 
 const FLOOR = -VIEW_H * 0.4 // the counter the cups stand on
 const CAM_HEIGHT = 1.5 // camera raised a little, looking down into the cups (the ice shows)
@@ -118,7 +118,7 @@ function Headline() {
 }
 
 function Cup({ which, start }: { which: 'coffee' | 'matcha'; start: -1 | 1 }) {
-  const { scene } = useGLTF(`/models/${which}.glb`)
+  const { scene } = useGLTF(`/models/${which}.glb`, DRACO)
   const g = useRef<Group>(null)
   const born = useRef(-1)
   const pos = useRef({ x: start * 0.6, y: FLOOR + VIEW_H, z: 0, s: 1 }) // where the cup is: it chases its target on a spring

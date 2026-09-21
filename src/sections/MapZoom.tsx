@@ -53,7 +53,8 @@ export default function MapZoom() {
     const stag = new Image()
     stag.src = '/brand-stag.svg'
 
-    fetch('/map/map.json')
+    // (580 KB: fetched when the section is a couple of screens away, not with the page)
+    const load = () => fetch('/map/map.json')
       .then((r) => r.json())
       .then((d: MapData) => {
         raw = d
@@ -220,6 +221,8 @@ export default function MapZoom() {
     let visible = false
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting))
     io.observe(cv)
+    const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { near.disconnect(); load() } }, { rootMargin: '200% 0px' })
+    near.observe(wrap.current!)
     const tick = () => {
       if (visible) draw()
     }
@@ -236,6 +239,7 @@ export default function MapZoom() {
     return () => {
       st.kill()
       io.disconnect()
+      near.disconnect()
       gsap.ticker.remove(tick)
       window.removeEventListener('resize', resize)
     }

@@ -5,13 +5,13 @@ import { Suspense, useEffect, useRef } from 'react'
 import { Mesh, ShaderMaterial, Texture, type Group, type MeshStandardMaterial } from 'three'
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
-import { CAM_Z, HERO_FOV } from './cups'
+import { CAM_Z, DRACO, HERO_FOV } from './cups'
 import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { page, VIEW_H } from './scroll'
 
-useGLTF.preload('/models/coffee.glb')
-useGLTF.preload('/models/matcha.glb')
+useGLTF.preload('/models/coffee.glb', DRACO)
+useGLTF.preload('/models/matcha.glb', DRACO)
 
 // The two real cups on a cream counter, the only 3D on the site. The camera never moves; the cups glide between marks
 // on springs as the page scrolls (page.act, driven by ScrollTriggers in App.tsx):
@@ -66,7 +66,7 @@ const POOL = new ShaderMaterial({
 const where = { coffee: { x: -10, y: 0, z: 0, s: 1, floor: 0 }, matcha: { x: 10, y: 0, z: 0, s: 1, floor: 0 } }
 
 function Cup({ which }: { which: 'coffee' | 'matcha' }) {
-  const { scene } = useGLTF(`/models/${which}.glb`)
+  const { scene } = useGLTF(`/models/${which}.glb`, DRACO)
   const g = useRef<Group>(null)
   const pos = useRef({ x: 0, y: FLOOR + VIEW_H * 1.2, z: 0, s: 1 }) // where the cup is: it chases its mark on a spring
   const vel = useRef({ x: 0, y: 0, z: 0 })

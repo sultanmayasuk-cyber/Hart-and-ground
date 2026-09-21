@@ -25,11 +25,13 @@ import {
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
+import { PHONE } from '../env'
+import { DRACO } from './cups'
 import { damp, pointer } from './pointer'
 import { PointerRig } from './rigs'
 import { page } from './scroll'
 
-useGLTF.preload('/models/coffee.glb')
+useGLTF.preload('/models/coffee.glb', DRACO)
 
 // The hero: one iced latte on the cream counter, the name behind it with the cup standing in for the ampersand.
 // Scrolling (page.dive, 0..1) lifts the camera over the rim and down through the ice into the drink: past the cubes
@@ -122,7 +124,7 @@ function Rig() {
     const inside_ = p >= CUT - 0.03
     if (inside_ !== soft.current) {
       soft.current = inside_
-      setDpr(inside_ ? 1 : Math.min(devicePixelRatio, 1.5))
+      setDpr(inside_ ? (PHONE ? 0.8 : 1) : Math.min(devicePixelRatio, PHONE ? 1.3 : 1.5))
     }
     const t = st.clock.elapsedTime
     const cam = camera as PerspectiveCamera
@@ -155,7 +157,7 @@ function Rig() {
 // ---------- outside ----------
 
 function Cup() {
-  const gltf = useGLTF('/models/coffee.glb')
+  const gltf = useGLTF('/models/coffee.glb', DRACO)
   // its own copy: the menu's canvas (Landing.tsx) shows the same model, and an object can only live in one scene
   const scene = useMemo(() => {
     const c = gltf.scene.clone(true)
@@ -270,6 +272,7 @@ function Drink() {
           varying vec3 vWorld;
           void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
         fragmentShader: /* glsl */ `
+          #define SHELLS ${PHONE ? 2 : 3}
           uniform vec3 uCam, uCrema, uCaramel, uEspresso, uMilk, uCream, uSurface;
           uniform float uTime;
           varying vec3 vWorld;
@@ -310,7 +313,7 @@ function Drink() {
               col = mix(col, uSurface * (0.7 + 0.5 * rip), seen);
             }
             // shells from far to near: each one veils what's behind it, so the billows have depth and parallax
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < SHELLS; i++) {
               vec3 p = ro + dir * (2.2 * pow(2.3, float(2 - i)));
               if (p.y > 0.0 || p.y < -${DEPTH}.0) continue;
               col = mix(col, drink(p), 0.5);
@@ -369,8 +372,11 @@ function useIce() {
   const mat = useMemo(
     () =>
       (() => {
+        // on a phone: no refraction (it costs a second render of the whole scene every frame); clear glass with
+        // reflections and bright edges reads as ice at that size
         const m = new MeshPhysicalMaterial({
-          transmission: 1,
+          ...(PHONE ? { transparent: true, opacity: 0.42, depthWrite: false } : {}),
+          transmission: PHONE ? 0 : 1,
           thickness: 1.6,
           roughness: 0.0,
           clearcoat: 1,
@@ -556,7 +562,7 @@ outgoingLight = outgoingLight * mix(1.0, 0.6, iceEdge) + totalSpecular * 1.5;
 }
 
 // Fine bubbles rising through the whole drink; the ones near the camera stream past as you sink.
-const BUBBLES = 520
+const BUBBLES = PHONE ? 200 : 520
 const lens = new Vector3()
 const bubbles = Array.from({ length: BUBBLES }, () => {
   const a = Math.random() * Math.PI * 2
@@ -838,7 +844,7 @@ function Pump() {
 export default function Dive() {
   return (
     <div className="absolute inset-0">
-      <Canvas style={{ pointerEvents: 'none' }} frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="demand" dpr={[1, PHONE ? 1.3 : 1.5]} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: !PHONE, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
         onCreated={({ gl }) => (gl.transmissionResolutionScale = 0.5)} // what the ice refracts is soft anyway: half the cost
       >
         <Pump />
