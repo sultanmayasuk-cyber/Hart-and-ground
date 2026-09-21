@@ -131,7 +131,7 @@ export default function App() {
 
       <main>
         {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
-        <section id="dive" className={`dive relative ${LIVE3D ? 'h-[620svh]' : 'h-svh'}`}>
+        <section id="dive" className={`dive relative ${LIVE3D ? (PHONE ? 'h-[400svh]' : 'h-[620svh]') : 'h-svh'}`}>
           <div className="sticky top-0 h-lvh overflow-hidden">
             {/* the words stand either side of the cup, like a poster: the opening line on the left, high; where, on the right, low */}
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">

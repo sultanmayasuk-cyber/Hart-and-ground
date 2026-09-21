@@ -1,4 +1,5 @@
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { PHONE } from '../env'
 import { LINKS } from '../links'
 import { BITES, DRINKS, type Category } from './menuData'
 
@@ -31,7 +32,23 @@ function Card({ c }: { c: Category }) {
   )
 }
 
+// On a phone the menu isn't set out here: the café's ordering page (Yousual) is built for a phone, so this is a short
+// invitation and a way in.
+function PhoneMenu() {
+  return (
+    <section id="menu" className="menu-sec plum relative z-[6] px-6 pb-[14svh] pt-[12svh] text-center">
+      <img className="menu-still" src="/cups-still.webp" alt="An iced matcha and an iced latte in Hart & Ground cups" onLoad={() => ScrollTrigger.refresh()} />
+      <h2 className="display reveal text-[11vw]">Coffee. Tea.<br />Matcha.</h2>
+      <p className="prose reveal mx-auto mt-6 max-w-[22rem]">
+        Our own roast, ceremonial matcha, smoothies, pastries and desserts. Everything is made to order, hot or over ice.
+      </p>
+      <a className="menu-cta display reveal" href={LINKS.order} target="_blank" rel="noreferrer">See the menu</a>
+    </section>
+  )
+}
+
 export default function Menu() {
+  if (PHONE) return <PhoneMenu />
   return (
     <section id="menu" className="menu-sec plum relative z-[6] px-6 pb-[18svh] pt-[20svh] md:px-10">
       {/* where the live cups can't stand (phones, no 3D): their photograph */}

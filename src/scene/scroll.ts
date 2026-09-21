@@ -33,13 +33,14 @@ export function useScrollDriver() {
     // the cups rise with the menu as it comes up over the end of the dive
     const a = ScrollTrigger.create({ trigger: '#menu', start: 'top 70%', end: 'top 5%', onUpdate: (s) => { hero = s.progress; set() } })
     // they trade places as the Matcha Collection comes up the page
-    const b = ScrollTrigger.create({ trigger: '#cat-matcha', start: 'top 72%', end: 'top 38%', onUpdate: (s) => { drinks = s.progress; set() } })
+    // (a phone has no menu list, and no live cups to trade)
+    const b = document.querySelector('#cat-matcha') && ScrollTrigger.create({ trigger: '#cat-matcha', start: 'top 72%', end: 'top 38%', onUpdate: (s) => { drinks = s.progress; set() } })
     // the cups sink under the page as the story arrives
     const c = ScrollTrigger.create({ trigger: '#story', start: 'top bottom', end: 'top 25%', onUpdate: (s) => { story = seg(s.progress, 0, 1); set() } })
     return () => {
       dive.kill()
       a.kill()
-      b.kill()
+      if (b) b.kill()
       c.kill()
     }
   }, [])

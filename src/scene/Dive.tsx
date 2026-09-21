@@ -65,7 +65,7 @@ type Key = { p: number; pos: [number, number, number]; tgt: [number, number, num
 const OUTSIDE = (aspect: number): Key[] => {
   // back far enough that the floating ice and the words fit round the cup; on a phone held upright the cup fills the
   // width between the two halves of the headline instead
-  const z0 = aspect < 0.8 ? 8.8 : Math.max(6.4, 9.6 / aspect)
+  const z0 = aspect < 0.8 ? 9.6 : Math.max(6.4, 9.6 / aspect)
   return [
     { p: 0, pos: [0, 1.4, z0], tgt: [0, 1.12, 0], fov: 30 },
     { p: 0.07, pos: [0, 2.7, z0 * 0.74], tgt: [0, 1.3, 0], fov: 33 },
