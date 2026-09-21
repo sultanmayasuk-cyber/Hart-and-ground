@@ -17,6 +17,12 @@ const Dive = lazy(() => import('./scene/Dive'))
 
 gsap.registerPlugin(ScrollTrigger)
 
+// Always open at the top: a reload otherwise comes back part-way into the dive, with the headline already sliding off.
+if (!location.hash) {
+  history.scrollRestoration = 'manual'
+  window.scrollTo(0, 0)
+}
+
 // The site, "Through the Glass": it opens on one iced latte and dives into it (scene/Dive.tsx), comes out on the
 // counter with the whole menu (the two real cups beside it, scene/Landing.tsx), tells the name's story on the brand's
 // purple and gold, stamps the wallet card, and zooms a hand-drawn map from London down to the door on Sheen Lane.
