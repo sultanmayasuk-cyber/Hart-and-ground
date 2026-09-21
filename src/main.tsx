@@ -8,10 +8,9 @@ import '@fontsource/crimson-pro/latin-400-italic.css'
 import '@fontsource/crimson-pro/latin-600.css'
 import './index.css'
 
-// Until launch, the live site is the coming-soon page. To work on the full site locally,
-// put VITE_COMING_SOON=false in .env.local. To launch (or show progress), change the default here to `=== 'true'`.
-declare const __PREVIEW__: boolean // (vite.config.ts: true on Vercel preview deployments)
-const COMING_SOON = import.meta.env.VITE_COMING_SOON !== 'false' && !__PREVIEW__
+// Launched 2026-09: the full site is what everyone gets. The coming-soon page is kept; VITE_COMING_SOON=true brings it
+// back (in .env.local, or as an environment variable on the host) if the site ever needs to go dark for a while.
+const COMING_SOON = import.meta.env.VITE_COMING_SOON === 'true'
 const Page = lazy(() => (COMING_SOON ? import('./ComingSoon') : import('./App')))
 
 createRoot(document.getElementById('root')!).render(

@@ -4,8 +4,8 @@
 
 ## Layout
 
-- `src/main.tsx` — picks the page: the coming-soon page by default (what's live), the full site with `VITE_COMING_SOON=false` in `.env.local`. To launch, flip the default there.
-- `src/ComingSoon.tsx` + `src/scene/CupDuo.tsx` — the live coming-soon page: logo header, "COMING SOON" drawn as a plane in the 3D scene (so cups can pass behind the letters), the two cups (spring-driven motion, periodic swap ride round the word), counter reflection
+- `src/main.tsx` — picks the page: the full site (live since launch, 2026-09); `VITE_COMING_SOON=true` brings the coming-soon page back.
+- `src/ComingSoon.tsx` + `src/scene/CupDuo.tsx` — the old coming-soon page (kept, not shown): logo header, "COMING SOON" drawn as a plane in the 3D scene (so cups can pass behind the letters), the two cups (spring-driven motion, periodic swap ride round the word), counter reflection
 - `src/App.tsx` — the full site, concept "Through the Glass": dive (hero, 620svh) / menu / story / rewards (300svh) / visit map (420svh) / footer. Cream and the royal purple alternate (dive cream, menu purple, story mist→purple, rewards purple, map cream, footer purple); gold only on purple.
 - `src/scene/Dive.tsx` — the hero dive, its own sticky canvas (frameloop demand). Opens like a poster: the latte in the middle, the headline split either side of it (DOM, `.hero-copy`), ice adrift round it (`Adrift`), real clear ice heaped on top (`Heap`, drops in on load; covers the model's baked ice, which fails up close). Scroll (`page.dive`) pushes in until the stag on the wall fills the screen, climbs over the rim (fov widens 30→60), the coffee closes in from the edges (`Veil`, an iris) to hide the cut to the interior (built at y = -60): ice (transmission), bubbles, espresso billowing into milk (shader on a sphere round the camera), then cream out into the page. The first 4 frames render from inside behind the veil to warm the GPU. Dev: `?snap` removes easing for frame checks.
 - `src/scene/Landing.tsx` — the menu section's two cups, fixed transparent canvas: `scene/scroll.ts` → `page.act` (0 parked below during the dive, 1 coffee in front, 2 matcha in front from `#cat-matcha`, 3 sunk at the story). Deliberately does not look like the coming-soon page.
@@ -21,7 +21,7 @@
 - `src/env.ts`: `LIVE3D` (WebGL available and motion not reduced) and `LIVE_CUPS` (that, and not a phone). Without `LIVE3D` the hero is `public/hero-still.jpg`, the dive section is one screen, Lenis is off. Without `LIVE_CUPS` the menu shows `public/cups-still.webp` instead of the Landing canvas. Both stills were saved off the live canvases in dev (`?snap` sets `preserveDrawingBuffer`).
 - A cream loader with the stag growing covers the page until Dive dispatches `hg-ready` (7s cap).
 - Fonts are self-hosted (`@fontsource/cinzel`, `@fontsource/crimson-pro`, imported in `main.tsx`); no third-party requests.
-- `index.html` carries the launch meta text, JSON-LD (`CafeOrCoffeeShop`) and `public/og.jpg` for the full site; the coming-soon og image is kept at `brand/og-comingsoon.jpg`. Pushing before launch would put these on the live coming-soon page.
+- `index.html` carries the launch meta text, JSON-LD (`CafeOrCoffeeShop`) and `public/og.jpg` for the full site; the coming-soon og image is kept at `brand/og-comingsoon.jpg`.
 
 ## Performance rules (the site was very laggy once)
 
