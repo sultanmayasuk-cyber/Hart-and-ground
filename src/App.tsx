@@ -1,97 +1,134 @@
-import { lazy, Suspense, useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { LIVE3D, LIVE_CUPS } from './env'
 import { useLenis } from './hooks/useLenis'
-import { PIN, useScrollProgress } from './scene/scroll'
+import { LINKS } from './links'
+import LogoLockup from './LogoLockup'
+import { useScrollDriver } from './scene/scroll'
+import Loyalty from './sections/Loyalty'
+import MapZoom from './sections/MapZoom'
+import Menu from './sections/Menu'
+import Story from './sections/Story'
 
-const Scene = lazy(() => import('./scene/Scene'))
-
-function Header() {
-  return (
-    <header className="site-header fixed inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5 md:px-12">
-      <a href="#" className="flex items-center gap-3">
-        <span className="mark h-9 w-9" aria-hidden />
-        <span className="font-display text-[15px] tracking-[0.18em]">HART &amp; GROUND</span>
-      </a>
-      <nav className="hidden gap-9 text-[12px] tracking-[0.22em] uppercase md:flex">
-        <a href="#drinks">Drinks</a>
-        <a href="#story">Story</a>
-        <a href="#visit">Visit</a>
-      </nav>
-      <a href="#visit" className="pill rounded-full border px-5 py-2 text-[12px] tracking-[0.18em] uppercase">
-        Order
-      </a>
-    </header>
-  )
-}
+const Landing = lazy(() => import('./scene/Landing'))
+const Dive = lazy(() => import('./scene/Dive'))
 
 gsap.registerPlugin(ScrollTrigger)
 
-function App() {
+// The site, "Through the Glass": it opens on one iced latte and dives into it (scene/Dive.tsx), comes out on the
+// counter with the whole menu (the two real cups beside it, scene/Landing.tsx), tells the name's story on the brand's
+// purple and gold, stamps the wallet card, and zooms a hand-drawn map from London down to the door on Sheen Lane.
+export default function App() {
   useLenis()
-  useScrollProgress()
-  const pinned = useRef<HTMLElement>(null)
+  useScrollDriver()
+  const root = useRef<HTMLDivElement>(null)
+  const [loaded, setLoaded] = useState(!LIVE3D) // the 3D is on screen (or there is none to wait for)
+
   useEffect(() => {
-    if (!pinned.current) return
-    // section two holds in place for one screen while the grains dive into the cups
-    const st = ScrollTrigger.create({ trigger: pinned.current, start: 'top top', end: `+=${Math.round(PIN * 100)}%`, pin: true, pinSpacing: true })
-    ScrollTrigger.refresh() // the pin adds a screen of scroll; re-measure the progress trigger
-    return () => st.kill()
+    document.title = 'Hart & Ground · Café & Roasters, London'
+    document.fonts.ready.then(() => ScrollTrigger.refresh()) // (the fonts reflow the page; the scroll marks follow)
+    const ctx = gsap.context(() => {
+      // the header turns cream while something dark is under it
+      for (const id of ['#menu', '#rewards', '#footer'])
+        ScrollTrigger.create({ trigger: id, start: 'top 48px', end: 'bottom 48px', toggleClass: { targets: '.hdr', className: 'on-plum' } })
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      for (const el of gsap.utils.toArray<HTMLElement>('.reveal'))
+        gsap.from(el, { opacity: 0, y: 26, duration: 1.3, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' } })
+    }, root)
+    return () => ctx.revert()
   }, [])
 
+  // the loader lifts when the cup is ready to be set down (scene/Dive.tsx says so), or after a few seconds regardless;
+  // the headline rises as it goes
+  useEffect(() => {
+    if (!LIVE3D) return
+    const done = () => setLoaded(true)
+    window.addEventListener('hg-ready', done)
+    const t = setTimeout(done, 7000)
+    return () => {
+      window.removeEventListener('hg-ready', done)
+      clearTimeout(t)
+    }
+  }, [])
+  useEffect(() => {
+    if (!loaded || !LIVE3D) return
+    const ctx = gsap.context(() => {
+      gsap.from('.hero-copy .line > span', { yPercent: 115, duration: 1.5, ease: 'power4.out', stagger: 0.12, delay: 0.25 })
+      gsap.from('.hero-sub', { opacity: 0, y: 14, duration: 1.4, ease: 'power3.out', delay: 1.1 })
+    }, root)
+    return () => ctx.revert()
+  }, [loaded])
+
   return (
-    <>
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
-      <Header />
-      <main className="ink">
-        {/* 1 · hero */}
-        <section className="hero-fade relative flex h-svh flex-col justify-center px-6 md:px-14">
-          <div className="max-w-[46vw]">
-            <h1 className="font-display text-[10vw] leading-[0.92] tracking-[0.03em] md:text-[7.2vw]">
-              Hart
-              <br />
-              <span className="text-[#e2c078]">&amp;</span> Ground
-            </h1>
-            <p className="mt-6 max-w-xs text-sm leading-relaxed opacity-75 md:text-base">
-              Coffee roasted with heat. Matcha grown in shade. Rich in simple moments.
-            </p>
+    <div ref={root} className={`site ${LIVE3D ? '' : 'no-dive'} ${LIVE_CUPS ? '' : 'no-cups'}`}>
+      {LIVE3D && (
+        <div className={`loader ${loaded ? 'gone' : ''}`} aria-hidden>
+          <span className="stag" />
+        </div>
+      )}
+      {LIVE_CUPS && (
+        <Suspense fallback={null}>
+          <Landing />
+        </Suspense>
+      )}
+
+      <header className="hdr fixed inset-x-0 top-0 z-20 grid grid-cols-[auto_1fr] items-center gap-4 px-5 py-4 sm:grid-cols-[1fr_auto_1fr] md:px-10 md:py-5">
+        <a href="#dive" className="justify-self-start" aria-label="Hart & Ground">
+          <span className="stag block aspect-[505/470] h-8 bg-current md:h-10" aria-hidden />
+        </a>
+        <nav className="nav flex justify-end gap-4 sm:justify-center md:gap-10">
+          <a href="#menu">Menu</a>
+          <a href="#story">Story</a>
+          <a href="#rewards">Rewards</a>
+          <a href="#visit">Visit</a>
+        </nav>
+        <a className="nav hidden justify-self-end sm:block" href={LINKS.order} target="_blank" rel="noreferrer">Order</a>
+      </header>
+
+      <main>
+        {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
+        <section id="dive" className={`dive relative ${LIVE3D ? 'h-[620svh]' : 'h-svh'}`}>
+          <div className="sticky top-0 h-svh overflow-hidden">
+            {/* the words stand either side of the cup, like a poster: the opening line on the left, high; where, on the right, low */}
+            <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">
+              <h1 className="display">
+                <span className="hero-l"><span className="line"><span>A little</span></span><span className="line"><span>escape</span></span></span>
+                <span className="hero-r"><span className="line"><span>in</span></span><span className="line"><span>Richmond.</span></span></span>
+              </h1>
+              <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
+            </div>
+            {LIVE3D ? (
+              <Suspense fallback={null}>
+                <Dive />
+              </Suspense>
+            ) : (
+              <img className="absolute inset-0 h-full w-full object-cover" src="/hero-still.jpg" alt="A Hart & Ground iced latte" />
+            )}
           </div>
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[11px] tracking-[0.32em] uppercase opacity-50">Scroll</div>
         </section>
 
-        {/* 2 · the cups arrive on the right, copy on the left */}
-        <section id="drinks" ref={pinned} className="flex h-svh flex-col justify-center px-6 md:px-14">
-          <p className="text-[11px] tracking-[0.32em] uppercase opacity-60">Two cups · one counter</p>
-          <h2 className="font-display mt-4 text-[9vw] leading-[0.95] tracking-[0.03em] md:text-[5.6vw]">
-            Roasted
-            <br />
-            &amp; whisked.
-          </h2>
-          <p className="mt-6 max-w-sm text-sm leading-relaxed opacity-75 md:text-base">
-            Iced coffee from beans we roast ourselves. Iced matcha from leaves grown in shade. Same cup, two paths.
-          </p>
-        </section>
-
-        {/* 3 · the cups circle down to the left, copy on the right */}
-        <section id="story" className="flex h-svh flex-col items-end justify-center px-6 text-right md:px-14">
-          <p className="text-[11px] tracking-[0.32em] uppercase opacity-60">Take the long way home</p>
-          <h2 className="font-display mt-4 text-[9vw] leading-[0.95] tracking-[0.03em] md:text-[5.6vw]">
-            Every stag
-            <br />
-            grows back.
-          </h2>
-          <p className="mt-6 max-w-sm text-sm leading-relaxed opacity-75 md:text-base">
-            A hart sheds its antlers every year and grows them again. Recharge yourself. 65A, London.
-          </p>
-          <a href="#visit" className="pill mt-8 rounded-full border px-6 py-3 text-[12px] tracking-[0.18em] uppercase">
-            Find us
-          </a>
-        </section>
+        <Menu />
+        <Story />
+        <Loyalty />
+        <MapZoom />
       </main>
-    </>
+
+      <footer id="footer" className="plum relative flex flex-col items-center px-6 pb-10 pt-[16svh] text-center md:px-10">
+        <span className="stag gold-bg block aspect-[505/470] h-[min(16svh,30vw)]" aria-hidden />
+        <LogoLockup className="gold mt-8 w-[min(64vw,22rem)]" />
+        <p className="display gold mt-[9svh] text-[7vw] md:text-[2.6vw]">Take the long way home.</p>
+        <nav className="nav mt-[9svh] flex flex-wrap justify-center gap-x-9 gap-y-3">
+          <a href={LINKS.order} target="_blank" rel="noreferrer">Order</a>
+          <a href={LINKS.rewards} target="_blank" rel="noreferrer">Rewards</a>
+          <a href={LINKS.maps} target="_blank" rel="noreferrer">Directions</a>
+          <a href={LINKS.reviews} target="_blank" rel="noreferrer">Reviews</a>
+          <a href={LINKS.instagram} target="_blank" rel="noreferrer">Instagram</a>
+          <a href={LINKS.snapchat} target="_blank" rel="noreferrer">Snapchat</a>
+          <a href={LINKS.phone}>{LINKS.phoneText}</a>
+        </nav>
+        <p className="prose small mt-[8svh]">Sheen Lane, London SW14 8AD · © 2026 Hart &amp; Ground</p>
+      </footer>
+    </div>
   )
 }
-
-export default App

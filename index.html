@@ -3,24 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- the stag's 40k grains: start downloading before the JS asks for them -->
-    <link rel="preload" href="/stag-points.bin" as="fetch" type="application/octet-stream" crossorigin="anonymous" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#2a1421" />
-    <meta name="description" content="Hart &amp; Ground, cafe &amp; roasters at 65A, London. Coffee roasted with heat, matcha grown in shade. Coming soon." />
-    <title>Hart &amp; Ground · Cafe &amp; Roasters, London</title>
+    <meta name="description" content="Hart &amp; Ground, café &amp; roasters on Sheen Lane, London SW14. Specialty coffee, ceremonial matcha and desserts, a short walk from Richmond Park." />
+    <link rel="canonical" href="https://www.hartandground.uk/" />
+    <title>Hart &amp; Ground · Café &amp; Roasters, London</title>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- link previews (WhatsApp, iMessage, Instagram, Facebook, LinkedIn, X) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Hart &amp; Ground" />
     <meta property="og:title" content="Hart &amp; Ground · Café &amp; Roasters, London" />
-    <meta property="og:description" content="Coffee roasted with heat, matcha grown in shade. 65A, London. Coming soon." />
+    <meta property="og:description" content="A little escape in Richmond. Specialty coffee, ceremonial matcha and desserts on Sheen Lane, SW14." />
     <meta property="og:url" content="https://www.hartandground.uk/" />
     <meta property="og:image" content="https://www.hartandground.uk/og.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Hart &amp; Ground iced coffee and iced matcha in front of the words Coming Soon" />
+    <meta property="og:image:alt" content="A Hart &amp; Ground iced latte, with the words: A little escape in Richmond" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- for Google and Maps: who and where we are -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CafeOrCoffeeShop",
+        "name": "Hart & Ground",
+        "description": "Café & roasters. Specialty coffee, ceremonial matcha and desserts.",
+        "url": "https://www.hartandground.uk/",
+        "image": "https://www.hartandground.uk/og.jpg",
+        "telephone": "+447355575553",
+        "priceRange": "£",
+        "servesCuisine": ["Coffee", "Matcha", "Pastries", "Desserts"],
+        "address": { "@type": "PostalAddress", "streetAddress": "Sheen Lane", "addressLocality": "London", "postalCode": "SW14 8AD", "addressCountry": "GB" },
+        "geo": { "@type": "GeoCoordinates", "latitude": 51.466827, "longitude": -0.266687 },
+        "hasMap": "https://www.google.com/maps?cid=5569620230422482149",
+        "hasMenu": "https://hartandground.yousual.app",
+        "sameAs": ["https://www.instagram.com/hartandground", "https://www.snapchat.com/add/hartandground"]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

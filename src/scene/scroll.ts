@@ -1,58 +1,49 @@
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect } from 'react'
 
-// Single source of truth: page scroll progress 0..1. `smooth` is a damped copy for the simulation
-// so reversing direction never snaps particles around.
-export const scroll = { progress: 0, smooth: 0, dir: 1 }
+// What the scene needs to know about the page, written by ScrollTriggers in App.tsx and read every frame by the cups.
+// dive: progress through the hero dive (Dive.tsx), 0..1.
+// act: which mark the cups are at: 0 waiting below (during the dive), 1 drinks (coffee in front), 2 drinks (matcha in front),
+// 3 gone below the counter.
+export const page = { dive: 0, act: 0 }
 
-export function useScrollProgress() {
+export function useScrollDriver() {
   useEffect(() => {
-    const st = ScrollTrigger.create({
-      trigger: document.body,
+    const seg = (p: number, a: number, b: number) => {
+      const u = Math.min(1, Math.max(0, (p - a) / (b - a)))
+      return u * u * (3 - 2 * u)
+    }
+    let hero = 0
+    let drinks = 0
+    let story = 0
+    const set = () => (page.act = hero + seg(drinks, 0, 1) + story)
+    const el = document.getElementById('dive')
+    const hdr = document.querySelector('.hdr')
+    const dive = ScrollTrigger.create({
+      trigger: '#dive',
       start: 'top top',
-      end: 'max',
-      onUpdate: (self) => {
-        scroll.dir = self.progress >= scroll.progress ? 1 : -1
-        scroll.progress = self.progress
+      end: 'bottom bottom',
+      onUpdate: (s) => {
+        page.dive = s.progress
+        el?.style.setProperty('--dive', s.progress.toFixed(4))
+        hdr?.classList.toggle('in-dive', s.progress < 0.97)
+        hdr?.classList.toggle('on-dark', s.progress > 0.25 && s.progress < 0.72) // cream over the dark of the drink
       },
     })
-    let raf = 0
-    let last = performance.now()
-    const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000)
-      last = now
-      scroll.smooth += (scroll.progress - scroll.smooth) * (1 - Math.exp(-7 * dt))
-      document.documentElement.style.setProperty('--p', scroll.smooth.toFixed(4))
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
+    // the cups rise with the menu as it comes up over the end of the dive
+    const a = ScrollTrigger.create({ trigger: '#menu', start: 'top 70%', end: 'top 5%', onUpdate: (s) => { hero = s.progress; set() } })
+    // they trade places as the Matcha Collection comes up the page
+    const b = ScrollTrigger.create({ trigger: '#cat-matcha', start: 'top 72%', end: 'top 38%', onUpdate: (s) => { drinks = s.progress; set() } })
+    // the cups sink under the page as the story arrives
+    const c = ScrollTrigger.create({ trigger: '#story', start: 'top bottom', end: 'top 25%', onUpdate: (s) => { story = seg(s.progress, 0, 1); set() } })
     return () => {
-      st.kill()
-      cancelAnimationFrame(raf)
+      dive.kill()
+      a.kill()
+      b.kill()
+      c.kill()
     }
   }, [])
 }
 
-// World units per viewport height at z=0 for the fixed hero camera (fov 35, z 5.2), and how far the
-// page has scrolled in world units. 3D objects add this to their y to scroll with the DOM.
+// World units per viewport height at z=0 for the fixed camera (fov 35, z 5.2).
 export const VIEW_H = 2 * Math.tan((35 * Math.PI) / 360) * 5.2
-export const PIN = 0.45 // section two holds for this fraction of a screen
-export const PAGE_SCREENS = 2 + PIN // hero + section two (+ hold) + section three
-export const P_CENTER = 1 / PAGE_SCREENS // progress where section two is centred (hold starts)
-export const P_HOLD_END = (1 + PIN) / PAGE_SCREENS
-export const pageOffset = () => scroll.smooth * PAGE_SCREENS * VIEW_H
-
-export type Keys = [number, number][]
-export function kf(keys: Keys, t: number): number {
-  if (t <= keys[0][0]) return keys[0][1]
-  for (let i = 1; i < keys.length; i++) {
-    const [t1, v1] = keys[i]
-    if (t <= t1) {
-      const [t0, v0] = keys[i - 1]
-      const u = (t - t0) / (t1 - t0)
-      const e = u * u * (3 - 2 * u)
-      return v0 + (v1 - v0) * e
-    }
-  }
-  return keys[keys.length - 1][1]
-}
