@@ -1,7 +1,8 @@
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { LIVE3D, LIVE_CUPS } from './env'
+import { LIVE3D, LIVE_CUPS, PHONE } from './env'
+import { QUOTES } from './quotes'
 import { useLenis } from './hooks/useLenis'
 import { LINKS } from './links'
 import LogoLockup from './LogoLockup'
@@ -99,9 +100,19 @@ export default function App() {
               <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
             </div>
             {LIVE3D ? (
-              <Suspense fallback={null}>
-                <Dive />
-              </Suspense>
+              <>
+                <Suspense fallback={null}>
+                  <Dive />
+                </Suspense>
+                {/* on a phone the cup lines are set in the page, not in the 3D: sharp at any size, and free */}
+                {PHONE && (
+                  <div className="dive-quotes" aria-hidden>
+                    {QUOTES.map((q, i) => (
+                      <p key={q} className={`display dq ${i >= 8 ? 'on-milk' : ''}`} style={{ '--a': 0.35 + i * 0.046, '--b': 0.35 + i * 0.046 + 0.085, '--x': i % 2 ? 1 : -1 } as React.CSSProperties}>{q}</p>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <img className="absolute inset-0 h-full w-full object-cover" src="/hero-still.jpg" alt="A Hart & Ground iced latte" />
             )}

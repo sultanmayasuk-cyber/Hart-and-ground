@@ -26,6 +26,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
 import { PHONE } from '../env'
+import { QUOTES } from '../quotes'
 import { DRACO } from './cups'
 import { damp, pointer } from './pointer'
 import { PointerRig } from './rigs'
@@ -112,6 +113,9 @@ function Rig() {
   const { camera } = useThree()
   const setDpr = useThree((st) => st.setDpr)
   const soft = useRef(false)
+  const slow = useRef(1 / 60) // running average frame time
+  const frames = useRef(0)
+  const quality = useRef(1)
   useFrame((st, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30)
     state.p = SNAP ? page.dive : damp(state.p, page.dive, 3.2, dt)
@@ -122,9 +126,19 @@ function Rig() {
     const p = warming ? 0.5 : state.p
     // sharp outside; inside the drink everything is soft, so it's drawn at one pixel per point (less than half the work)
     const inside_ = p >= CUT - 0.03
+    // and it watches itself: if frames run long (an older phone, a busy laptop) it draws fewer pixels, step by step,
+    // until they don't. Smooth comes before sharp. It never steps back up (that would only oscillate).
+    if (!warming && rawDt < 0.2) {
+      slow.current = slow.current * 0.95 + rawDt * 0.05
+      if (++frames.current > 45 && slow.current > 1 / 45 && quality.current > 0.5) {
+        quality.current *= 0.8
+        frames.current = 0
+        soft.current = !inside_ // (forces the size to be set again, below)
+      }
+    }
     if (inside_ !== soft.current) {
       soft.current = inside_
-      setDpr(inside_ ? (PHONE ? 0.8 : 1) : Math.min(devicePixelRatio, PHONE ? 1.3 : 1.5))
+      setDpr((inside_ ? 1 : Math.min(devicePixelRatio, PHONE ? 1.3 : 1.5)) * quality.current)
     }
     const t = st.clock.elapsedTime
     const cam = camera as PerspectiveCamera
@@ -375,7 +389,7 @@ function useIce() {
         // on a phone: no refraction (it costs a second render of the whole scene every frame); clear glass with
         // reflections and bright edges reads as ice at that size
         const m = new MeshPhysicalMaterial({
-          ...(PHONE ? { transparent: true, opacity: 0.42, depthWrite: false } : {}),
+          ...(PHONE ? { transparent: true, opacity: 0.3, depthWrite: false } : {}),
           transmission: PHONE ? 0 : 1,
           thickness: 1.6,
           roughness: 0.0,
@@ -629,11 +643,6 @@ function Bubbles() {
 
 // The lines the café prints on its cups, afloat in the drink: each hangs at its own depth off to one side of the way
 // down, swaying a little, and comes out of the murk as the camera sinks toward it. Cream in the coffee, plum in the milk.
-const QUOTES = [
-  'Slow moments in a fast city.', 'Gently hold the present.', 'Simple things, deeply felt.', 'This moment is enough.',
-  'Some moments are meant to be savoured.', 'Leave room for the little things.', 'Good coffee, better company.', 'A good day starts here.',
-  "You're exactly where you need to be.", 'Today deserves a little softness.', 'Rich in simple moments.', 'Take the long way home.',
-]
 const QUOTE_X = [-2.3, 2.5, -0.6, 2.9, -2.9, 0.9, -2.0, 2.6, -1.0, 2.2, -2.6, 0]
 function quoteTexture(text: string, colour: string) {
   const canvas = document.createElement('canvas')
@@ -708,6 +717,7 @@ function Quotes() {
 // A screen-sized veil drawn over everything: the foam as the camera breaks the surface, then the cream at the end.
 function Veil() {
   const { size } = useThree()
+  const veil = useRef<Mesh>(null)
   const mat = useMemo(
     () =>
       new ShaderMaterial({
@@ -759,9 +769,11 @@ function Veil() {
     mat.uniforms.uOut.value = !state.ready ? 1 : ramp(Math.max(p, page.dive), 0.9, 0.97) // never behind the page: the next section is cream
     mat.uniforms.uTime.value = st.clock.elapsedTime
     mat.uniforms.uAspect.value = size.width / size.height
+    // (a full-screen pass: skipped whenever it would draw nothing)
+    if (veil.current) veil.current.visible = mat.uniforms.uVeil.value > 0.001 || mat.uniforms.uOut.value > 0.001
   })
   return (
-    <mesh material={mat} renderOrder={1000} frustumCulled={false}>
+    <mesh ref={veil} material={mat} renderOrder={1000} frustumCulled={false}>
       <planeGeometry />
     </mesh>
   )
@@ -788,7 +800,7 @@ function Worlds() {
         <Drink />
         <Ice />
         <Bubbles />
-        <Quotes />
+        {!PHONE && <Quotes />}
         <pointLight position={[0, 1.5, 0]} intensity={40} distance={30} decay={1.4} color="#fff0d8" />
         <pointLight position={[0, -DEPTH - 2, 0]} intensity={25} distance={16} decay={1.4} color="#fff6ea" />
       </group>

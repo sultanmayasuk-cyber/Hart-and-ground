@@ -72,6 +72,14 @@
     opacity: clamp(0, min((var(--dive) - var(--a)) * 22, (var(--b) - var(--dive)) * 22), 1);
     translate: 0 calc((0.5 - (var(--dive) - var(--a)) / (var(--b) - var(--a))) * 3rem); }
   .dive-line.on-milk { color: var(--plum); text-shadow: none; }
+  /* phones: the cup lines, set in the page. Each rises through the screen as you sink past it, swaying a little */
+  .dive-quotes { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+  .dq { --t: calc((var(--dive) - var(--a)) / (var(--b) - var(--a))); position: absolute; left: 50%; top: 50%; width: 82vw; text-align: center; font-size: clamp(1.35rem, 6.2vw, 2rem); line-height: 1.15; color: var(--cream); text-shadow: 0 1px 22px rgb(20 8 2 / 0.45);
+    opacity: clamp(0, min(var(--t) * 5, (1 - var(--t)) * 5), 1); translate: calc(-50% + var(--x) * 3vw) calc(-50% + (0.5 - var(--t)) * 46svh); animation: sway 7s ease-in-out infinite alternate; }
+  .dq.on-milk { color: var(--plum); text-shadow: none; }
+  @keyframes sway { from { rotate: -1.2deg; } to { rotate: 1.2deg; } }
+  /* phones: nothing fixed and filtered over the 3D (grain, blurred header): both are costly on iOS */
+  @media (max-width: 767px) { .site::after { display: none; } .hdr::before { backdrop-filter: none; -webkit-backdrop-filter: none; } }
 
   /* the loader: the stag grows up out of the ground while the cup is fetched, then the sheet lifts */
   .loader { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: var(--cream); color: var(--plum); transition: opacity 0.9s ease 0.15s, visibility 0s linear 1.1s; }
