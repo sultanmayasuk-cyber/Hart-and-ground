@@ -111,7 +111,7 @@
   .hero-l { left: clamp(1.5rem, 5vw, 6rem); top: 24svh; }
   .hero-r { right: clamp(1.5rem, 5vw, 6rem); bottom: 15svh; text-align: right; }
   .hero-sub { position: absolute; left: clamp(1.5rem, 5vw, 6rem); bottom: 9svh; max-width: 19rem; opacity: 0.8; }
-  @media (max-width: 767px) { .hero-l { top: 11svh; } .hero-r { bottom: calc(100lvh - 100svh + 5svh); } .hero-sub { display: none; } }
+  @media (max-width: 767px) { .hero-l { top: 11svh; } .hero-copy { bottom: auto; height: 100svh; } .hero-r { bottom: 5svh; } .hero-sub { display: none; } }
 
   /* gold, used on the purple only */
   .gold { color: var(--gold); }
