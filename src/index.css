@@ -54,7 +54,8 @@
   .line > span { display: block; }
 
   /* header: plum on cream, cream while the plum block (or the dark of the drink) is under it */
-  .hdr { color: var(--plum); transition: color 0.5s ease; }
+  .hdr { color: var(--plum); transition: color 0.5s ease, translate 0.45s cubic-bezier(0.3, 0, 0.2, 1); }
+  .hdr.away { translate: 0 -120%; }
   .hdr.on-plum, .hdr.on-dark { color: var(--cream); }
   /* under the header the page is softly blurred (no colour of its own, so it's right over cream, purple, and the edge
      between them), so text scrolling past doesn't run through the nav */
@@ -72,12 +73,13 @@
     opacity: clamp(0, min((var(--dive) - var(--a)) * 22, (var(--b) - var(--dive)) * 22), 1);
     translate: 0 calc((0.5 - (var(--dive) - var(--a)) / (var(--b) - var(--a))) * 3rem); }
   .dive-line.on-milk { color: var(--plum); text-shadow: none; }
-  /* phones: the cup lines, set in the page. Each rises through the screen as you sink past it, swaying a little */
+  /* phones: the cup lines, set in the page */
   .dive-quotes { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
-  .dq { --t: calc((var(--dive) - var(--a)) / (var(--b) - var(--a))); position: absolute; left: 50%; top: 50%; width: 82vw; text-align: center; font-size: clamp(1.35rem, 6.2vw, 2rem); line-height: 1.15; color: var(--cream); text-shadow: 0 1px 22px rgb(20 8 2 / 0.45);
-    opacity: clamp(0, min(var(--t) * 5, (1 - var(--t)) * 5), 1); translate: calc(-50% + var(--x) * 3vw) calc(-50% + (0.5 - var(--t)) * 46svh); animation: sway 7s ease-in-out infinite alternate; }
+  /* one at a time, big, in the middle: it fades up, holds while you read, and lifts away. No shadows or endless
+     animations on these (both repaint every frame over the 3D, which iOS pays dearly for) */
+  .dq { --t: calc((var(--dive) - var(--a)) / (var(--b) - var(--a))); position: absolute; left: 50%; top: 46%; width: 84vw; text-align: center; font-size: clamp(1.7rem, 8vw, 2.6rem); line-height: 1.12; color: #fff8ee; text-shadow: 0 1px 10px rgb(30 12 4 / 0.6);
+    opacity: clamp(0, min(var(--t) * 6, (1 - var(--t)) * 6), 1); translate: -50% calc(-50% + (0.5 - var(--t)) * 14svh); will-change: opacity, translate; }
   .dq.on-milk { color: var(--plum); text-shadow: none; }
-  @keyframes sway { from { rotate: -1.2deg; } to { rotate: 1.2deg; } }
   /* phones: nothing fixed and filtered over the 3D (grain, blurred header): both are costly on iOS */
   @media (max-width: 767px) { .site::after { display: none; } .hdr::before { backdrop-filter: none; -webkit-backdrop-filter: none; } }
 
@@ -102,7 +104,7 @@
   .hero-l { left: clamp(1.5rem, 5vw, 6rem); top: 24svh; }
   .hero-r { right: clamp(1.5rem, 5vw, 6rem); bottom: 15svh; text-align: right; }
   .hero-sub { position: absolute; left: clamp(1.5rem, 5vw, 6rem); bottom: 9svh; max-width: 19rem; opacity: 0.8; }
-  @media (max-width: 767px) { .hero-l { top: 11svh; } .hero-r { bottom: 12svh; } .hero-sub { display: none; } }
+  @media (max-width: 767px) { .hero-l { top: 11svh; } .hero-r { bottom: calc(100lvh - 100svh + 10svh); } .hero-sub { display: none; } }
 
   /* gold, used on the purple only */
   .gold { color: var(--gold); }

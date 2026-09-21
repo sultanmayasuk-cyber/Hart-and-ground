@@ -2,7 +2,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { LIVE3D, LIVE_CUPS, PHONE } from './env'
-import { QUOTES } from './quotes'
+import { PHONE_QUOTES } from './quotes'
 import { useLenis } from './hooks/useLenis'
 import { LINKS } from './links'
 import LogoLockup from './LogoLockup'
@@ -38,6 +38,48 @@ export default function App() {
         gsap.from(el, { opacity: 0, y: 26, duration: 1.3, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' } })
     }, root)
     return () => ctx.revert()
+  }, [])
+
+  // on a phone the header gets out of the way while you read down the page, and comes back the moment you scroll up
+  useEffect(() => {
+    if (!PHONE) return
+    const hdr = document.querySelector('.hdr')
+    let last = scrollY
+    const on = () => {
+      const y = scrollY
+      if (Math.abs(y - last) < 6) return
+      hdr?.classList.toggle('away', y > last && y > 120)
+      last = y
+    }
+    window.addEventListener('scroll', on, { passive: true })
+    return () => window.removeEventListener('scroll', on)
+  }, [])
+
+  // ?fps: a frame-rate readout in the corner, for checking devices (worst and average over the last second)
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).has('fps')) return
+    const el = document.createElement('div')
+    el.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99;font:600 13px/1.2 monospace;background:#000c;color:#0f0;padding:4px 7px;border-radius:6px;pointer-events:none'
+    document.body.append(el)
+    let last = performance.now(), n = 0, worst = 0, since = last, raf = 0
+    const tick = (t: number) => {
+      worst = Math.max(worst, t - last)
+      last = t
+      n++
+      if (t - since > 1000) {
+        const cv = document.querySelector<HTMLCanvasElement>('#dive canvas')
+        el.textContent = `${Math.round((n * 1000) / (t - since))} fps · worst ${Math.round(worst)} ms · ${cv?.width}x${cv?.height} @${devicePixelRatio}`
+        n = 0
+        worst = 0
+        since = t
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      el.remove()
+    }
   }, [])
 
   // the loader lifts when the cup is ready to be set down (scene/Dive.tsx says so), or after a few seconds regardless;
@@ -90,7 +132,7 @@ export default function App() {
       <main>
         {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
         <section id="dive" className={`dive relative ${LIVE3D ? 'h-[620svh]' : 'h-svh'}`}>
-          <div className="sticky top-0 h-svh overflow-hidden">
+          <div className="sticky top-0 h-lvh overflow-hidden">
             {/* the words stand either side of the cup, like a poster: the opening line on the left, high; where, on the right, low */}
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">
               <h1 className="display">
@@ -107,8 +149,8 @@ export default function App() {
                 {/* on a phone the cup lines are set in the page, not in the 3D: sharp at any size, and free */}
                 {PHONE && (
                   <div className="dive-quotes" aria-hidden>
-                    {QUOTES.map((q, i) => (
-                      <p key={q} className={`display dq ${i >= 8 ? 'on-milk' : ''}`} style={{ '--a': 0.35 + i * 0.046, '--b': 0.35 + i * 0.046 + 0.085, '--x': i % 2 ? 1 : -1 } as React.CSSProperties}>{q}</p>
+                    {PHONE_QUOTES.map((q, i) => (
+                      <p key={q} className={`display dq ${i >= 4 ? 'on-milk' : ''}`} style={{ '--a': 0.34 + i * 0.092, '--b': 0.34 + i * 0.092 + 0.1 } as React.CSSProperties}>{q}</p>
                     ))}
                   </div>
                 )}

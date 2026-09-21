@@ -220,17 +220,18 @@ function Warmup() {
 
 // Frames only once the drinks section is arriving: while the dive plays, the cups are parked below and nothing is drawn.
 function Pump() {
-  const invalidate = useThree((st) => st.invalidate)
+  const setFrameloop = useThree((st) => st.setFrameloop)
   useEffect(() => {
-    let rest = 0 // frames drawn since the cups were sent below: enough for the springs to carry them out of sight
+    let rest = 0 // frames since the cups were sent below: enough for the springs to carry them out of sight
+    let on: boolean | null = null
     const tick = () => {
-      if (page.act < 0.0005 && stage.act < 0.0005) return
       rest = page.act > 2.999 ? rest + 1 : 0
-      if (rest < 150) invalidate()
+      const want = (page.act > 0.0005 || stage.act > 0.0005) && rest < 150
+      if (want !== on) setFrameloop((on = want) ? 'always' : 'never') // (every frame while they're on screen, none otherwise)
     }
     gsap.ticker.add(tick)
     return () => gsap.ticker.remove(tick)
-  }, [invalidate])
+  }, [setFrameloop])
   return null
 }
 
@@ -238,7 +239,7 @@ function Pump() {
 export default function Landing() {
   return (
     <div className="pointer-events-none fixed inset-0 z-10">
-      <Canvas style={{ pointerEvents: 'none' }} frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}>
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={[1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}>
         <Pump />
         <Layout />
         <PointerRig />

@@ -1,7 +1,7 @@
 import { ContactShadows, Environment, Lightformer, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import gsap from 'gsap'
-import { Suspense, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AdditiveBlending,
   BackSide,
@@ -65,7 +65,7 @@ type Key = { p: number; pos: [number, number, number]; tgt: [number, number, num
 const OUTSIDE = (aspect: number): Key[] => {
   // back far enough that the floating ice and the words fit round the cup; on a phone held upright the cup fills the
   // width between the two halves of the headline instead
-  const z0 = aspect < 0.8 ? 10.4 : Math.max(6.4, 9.6 / aspect)
+  const z0 = aspect < 0.8 ? 8.8 : Math.max(6.4, 9.6 / aspect)
   return [
     { p: 0, pos: [0, 1.4, z0], tgt: [0, 1.12, 0], fov: 30 },
     { p: 0.07, pos: [0, 2.7, z0 * 0.74], tgt: [0, 1.3, 0], fov: 33 },
@@ -108,10 +108,12 @@ const outsideFor = (aspect: number) => {
   return outside.leg
 }
 
+// the canvas's pixel ratio is a prop of <Canvas> (set from here through this): set any other way, the next resize
+// (a phone's toolbar sliding away is one) puts it back
+const res = { set: (_: number) => {} }
 const v = new Vector3()
 function Rig() {
   const { camera } = useThree()
-  const setDpr = useThree((st) => st.setDpr)
   const soft = useRef(false)
   const slow = useRef(1 / 60) // running average frame time
   const frames = useRef(0)
@@ -128,17 +130,19 @@ function Rig() {
     const inside_ = p >= CUT - 0.03
     // and it watches itself: if frames run long (an older phone, a busy laptop) it draws fewer pixels, step by step,
     // until they don't. Smooth comes before sharp. It never steps back up (that would only oscillate).
-    if (!warming && rawDt < 0.2) {
-      slow.current = slow.current * 0.95 + rawDt * 0.05
-      if (++frames.current > 45 && slow.current > 1 / 45 && quality.current > 0.5) {
-        quality.current *= 0.8
+    // (not while things are still loading and landing: those hitches aren't the device's steady pace)
+    if (state.ready && st.clock.elapsedTime - state.born > 4 && rawDt < 0.1) {
+      slow.current = slow.current * 0.97 + rawDt * 0.03
+      if (++frames.current > 90 && slow.current > 1 / 40 && quality.current > 0.7) {
+        quality.current *= 0.85
+        slow.current = 1 / 60
         frames.current = 0
         soft.current = !inside_ // (forces the size to be set again, below)
       }
     }
     if (inside_ !== soft.current) {
       soft.current = inside_
-      setDpr((inside_ ? 1 : Math.min(devicePixelRatio, PHONE ? 1.3 : 1.5)) * quality.current)
+      res.set((inside_ ? (PHONE ? 0.7 : 1) : Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5)) * quality.current)
     }
     const t = st.clock.elapsedTime
     const cam = camera as PerspectiveCamera
@@ -286,7 +290,7 @@ function Drink() {
           varying vec3 vWorld;
           void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
         fragmentShader: /* glsl */ `
-          #define SHELLS ${PHONE ? 2 : 3}
+          #define SHELLS ${PHONE ? 1 : 3}
           uniform vec3 uCam, uCrema, uCaramel, uEspresso, uMilk, uCream, uSurface;
           uniform float uTime;
           varying vec3 vWorld;
@@ -357,7 +361,7 @@ function Drink() {
 
 // Ice floating near the top: rounded, a little melted out of true, clear (it refracts the drink behind it) with a
 // cloudy core like real cubes from a tray.
-const CUBES: [number, number, number, number][] = [
+const CUBES_ALL: [number, number, number, number][] = [
   [-1.6, -0.7, -1.3, 1.2],
   [1.5, -0.5, -2.1, 1.1],
   [0.3, -1.4, -3.4, 1.3],
@@ -369,6 +373,7 @@ const CUBES: [number, number, number, number][] = [
   [3.0, -0.9, 1.9, 1.05],
   [-0.4, -0.45, 1.6, 0.9],
 ]
+const CUBES = PHONE ? CUBES_ALL.slice(0, 5) : CUBES_ALL // (a phone blends every see-through layer the hard way: fewer of them)
 function useIce() {
   const geo = useMemo(() => {
     const g = new RoundedBoxGeometry(1, 1, 1, 8, 0.24)
@@ -389,11 +394,11 @@ function useIce() {
         // on a phone: no refraction (it costs a second render of the whole scene every frame); clear glass with
         // reflections and bright edges reads as ice at that size
         const m = new MeshPhysicalMaterial({
-          ...(PHONE ? { transparent: true, opacity: 0.3, depthWrite: false } : {}),
+          ...(PHONE ? { transparent: true, opacity: 0.24, depthWrite: false } : {}),
           transmission: PHONE ? 0 : 1,
           thickness: 1.6,
           roughness: 0.0,
-          clearcoat: 1,
+          clearcoat: PHONE ? 0 : 1,
           ior: 1.31,
           color: '#ffffff',
           attenuationColor: new Color('#fbf6ef'),
@@ -463,7 +468,7 @@ function Ice() {
       {CUBES.map(([, , , s], i) => (
         <group key={i} scale={[s, s * 0.92, s * 1.04]}>
           <mesh geometry={geo} material={mat} />
-          <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />
+          {!PHONE && <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />}
         </group>
       ))}
     </group>
@@ -472,12 +477,13 @@ function Ice() {
 
 // The ice you see from outside: real clear cubes heaped on the drink (they cover the model's own baked ice, which
 // doesn't hold up close). On arrival they drop in one after another. x, y, z in cup units (rim at 0.93), size, tilt.
-const HEAP: [number, number, number, number, number][] = [
+const HEAP_ALL: [number, number, number, number, number][] = [
   [0.01, 0.875, 0.02, 0.16, 0.3], [-0.16, 0.868, 0.1, 0.15, 1.1], [0.15, 0.87, 0.12, 0.15, 2.0], [0.1, 0.868, -0.16, 0.155, 0.7],
   [-0.13, 0.866, -0.15, 0.15, 2.6], [-0.02, 0.925, -0.03, 0.13, 1.6], [0.22, 0.87, -0.04, 0.12, 3.0], [-0.23, 0.868, -0.04, 0.12, 0.2],
   [0.0, 0.862, 0.25, 0.11, 0.9], [0.25, 0.862, 0.16, 0.1, 1.9], [-0.26, 0.862, 0.15, 0.1, 2.4], [0.2, 0.862, -0.22, 0.1, 0.5],
   [-0.22, 0.862, -0.22, 0.1, 1.4], [0.0, 0.862, -0.27, 0.11, 2.9], [0.09, 0.93, 0.13, 0.11, 0.1], [-0.1, 0.928, -0.12, 0.11, 2.2],
 ]
+const HEAP = PHONE ? HEAP_ALL.slice(0, 8) : HEAP_ALL
 function Heap() {
   const { geo, mat: heavy, core } = useIce()
   // thinner than the ice inside: the camera ends up right among these, where heavy refraction smears into stripes
@@ -485,6 +491,7 @@ function Heap() {
     const m = heavy.clone()
     m.onBeforeCompile = heavy.onBeforeCompile
     m.thickness = 0.35
+    if (PHONE) m.opacity = 0.5
     return m
   }, [heavy])
   useEffect(() => () => mat.dispose(), [mat])
@@ -511,7 +518,7 @@ function Heap() {
       {HEAP.map(([, , , s], i) => (
         <group key={i} scale={s}>
           <mesh geometry={geo} material={mat} />
-          <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />
+          {!PHONE && <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />}
         </group>
       ))}
     </group>
@@ -520,10 +527,11 @@ function Heap() {
 
 // Ice adrift round the cup at the opening: slow, weightless, leaning away from the cursor. As the camera starts in,
 // the cubes are drawn into the cup and gone. x, y, z (world), size.
-const ADRIFT: [number, number, number, number][] = [
+const ADRIFT_ALL: [number, number, number, number][] = [
   [-2.5, 2.3, -0.6, 0.34], [2.3, 2.6, -1.0, 0.4], [-1.7, 0.6, 1.0, 0.26], [1.9, 0.9, 0.8, 0.3],
   [-3.3, 1.2, -1.6, 0.3], [3.2, 1.5, -1.4, 0.26], [0.9, 3.0, -0.8, 0.24], [-1.0, 2.9, 0.3, 0.2],
 ]
+const ADRIFT = PHONE ? ADRIFT_ALL.slice(0, 5) : ADRIFT_ALL
 function Adrift() {
   const { geo, mat: heavy, core } = useIce()
   const mat = useMemo(() => {
@@ -539,6 +547,7 @@ outgoingLight = outgoingLight * mix(1.0, 0.6, iceEdge) + totalSpecular * 1.5;
     }
     m.customProgramCacheKey = () => 'ice-adrift'
     m.thickness = 0.25
+    if (PHONE) m.opacity = 0.85
     m.envMapIntensity = 1.6
     m.attenuationColor = new Color('#ffffff')
     return m
@@ -568,7 +577,7 @@ outgoingLight = outgoingLight * mix(1.0, 0.6, iceEdge) + totalSpecular * 1.5;
       {ADRIFT.map((_, i) => (
         <group key={i}>
           <mesh geometry={geo} material={mat} />
-          <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />
+          {!PHONE && <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />}
         </group>
       ))}
     </group>
@@ -576,7 +585,7 @@ outgoingLight = outgoingLight * mix(1.0, 0.6, iceEdge) + totalSpecular * 1.5;
 }
 
 // Fine bubbles rising through the whole drink; the ones near the camera stream past as you sink.
-const BUBBLES = PHONE ? 200 : 520
+const BUBBLES = PHONE ? 110 : 520
 const lens = new Vector3()
 const bubbles = Array.from({ length: BUBBLES }, () => {
   const a = Math.random() * Math.PI * 2
@@ -842,21 +851,29 @@ function Warmup() {
 // Frames only while there's something to draw: the whole time the dive is on screen, none once it's scrolled past
 // (the drinks section's own canvas takes over from there).
 function Pump() {
-  const invalidate = useThree((st) => st.invalidate)
+  const setFrameloop = useThree((st) => st.setFrameloop)
   useEffect(() => {
+    // Runs every frame while the dive is on screen, not at all once it's scrolled past. (It used to ask for one frame
+    // at a time from gsap's ticker; that raced the renderer's own loop and drew only every other frame: 30 a second.)
+    let on: boolean | null = null
     const tick = () => {
-      if (page.dive < 0.999 || Math.abs(state.p - page.dive) > 1e-4) invalidate()
+      const want = page.dive < 0.999 || Math.abs(state.p - page.dive) > 1e-4
+      if (want !== on) setFrameloop((on = want) ? 'always' : 'never')
     }
     gsap.ticker.add(tick)
     return () => gsap.ticker.remove(tick)
-  }, [invalidate])
+  }, [setFrameloop])
   return null
 }
 
 export default function Dive() {
+  const [dpr, setDpr] = useState(() => Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5))
+  useEffect(() => {
+    res.set = setDpr
+  }, [])
   return (
     <div className="absolute inset-0">
-      <Canvas style={{ pointerEvents: 'none' }} frameloop="demand" dpr={[1, PHONE ? 1.3 : 1.5]} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: !PHONE, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="always" dpr={dpr} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
         onCreated={({ gl }) => (gl.transmissionResolutionScale = 0.5)} // what the ice refracts is soft anyway: half the cost
       >
         <Pump />

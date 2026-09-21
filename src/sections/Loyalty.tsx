@@ -43,7 +43,7 @@ export default function Loyalty() {
   }, [])
   return (
     <section id="rewards" ref={wrap} className="rewards plum relative h-[400svh]">
-      <div className="sticky top-0 flex h-svh flex-col items-center justify-center overflow-hidden px-6">
+      <div className="sticky top-0 flex h-lvh flex-col items-center justify-center overflow-hidden px-6">
         <span className="rw-glow" aria-hidden />
         <div className="rw-titles">
           <h2 className="display rw-step" style={{ '--a': -0.3, '--b': 0.13 } as React.CSSProperties}>A card that lives in your phone.</h2>

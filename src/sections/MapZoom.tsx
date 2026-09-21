@@ -247,7 +247,7 @@ export default function MapZoom() {
 
   return (
     <section id="visit" ref={wrap} className="visit relative h-[420svh]">
-      <div className="sticky top-0 h-svh overflow-hidden">
+      <div className="sticky top-0 h-lvh overflow-hidden">
         <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
         <span ref={ring} className="pin-ring" aria-hidden />
         <div className="visit-copy pointer-events-none absolute inset-0 flex flex-col justify-start px-6 pt-[13svh] md:justify-center md:px-[7vw] md:pt-0">
