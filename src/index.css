@@ -75,10 +75,17 @@
   .dive-line.on-milk { color: var(--plum); text-shadow: none; }
   /* phones: the cup lines, set in the page */
   .dive-quotes { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
-  /* one at a time, big, in the middle: it fades up, holds while you read, and lifts away. No shadows or endless
-     animations on these (both repaint every frame over the 3D, which iOS pays dearly for) */
-  .dq { --t: calc((var(--dive) - var(--a)) / (var(--b) - var(--a))); position: absolute; left: 50%; top: 46%; width: 84vw; text-align: center; font-size: clamp(1.7rem, 8vw, 2.6rem); line-height: 1.12; color: #fff8ee; text-shadow: 0 1px 10px rgb(30 12 4 / 0.6);
-    opacity: clamp(0, min(var(--t) * 6, (1 - var(--t)) * 6), 1); translate: -50% calc(-50% + (0.5 - var(--t)) * 14svh); will-change: opacity, translate; }
+  /* They float like the ones in the 3D on desktop: each hangs to one side at its own depth (near ones large, far
+     ones small and fainter), comes up out of the murk from below, drifts past and away above as you sink, with a slow
+     sway of its own. Only transform and opacity change (both free on a phone); --p is the camera's own eased progress. */
+  .dive-quotes { --p: 0; }
+  .dq { --t: calc((var(--p) - var(--a)) / (var(--b) - var(--a))); position: absolute; left: 50%; top: 50%; width: 78vw; margin: 0 0 0 -39vw; text-align: center;
+    font-size: clamp(1.5rem, 7.4vw, 2.4rem); line-height: 1.12; color: #fff8ee; text-shadow: 0 1px 3px rgb(30 12 4 / 0.55), 0 2px 16px rgb(30 12 4 / 0.7);
+    opacity: calc(clamp(0, min(var(--t) * 4, (1 - var(--t)) * 4), 1) * (0.55 + var(--z) * 0.45));
+    transform: translate3d(calc(var(--x) * 7vw), calc((0.5 - var(--t)) * 78svh * var(--z)), 0) scale(calc(var(--z) * (0.92 + var(--t) * 0.14))); will-change: transform, opacity; }
+  .dq span { display: block; animation: drift 9s ease-in-out infinite alternate; }
+  .dq:nth-child(even) span { animation-duration: 11s; animation-direction: alternate-reverse; }
+  @keyframes drift { from { transform: translate3d(-2.2vw, 0.6svh, 0) rotate(-1.4deg); } to { transform: translate3d(2.2vw, -0.6svh, 0) rotate(1.4deg); } }
   .dq.on-milk { color: var(--plum); text-shadow: none; }
   /* phones: nothing fixed and filtered over the 3D (grain, blurred header): both are costly on iOS */
   @media (max-width: 767px) { .site::after { display: none; } .hdr::before { backdrop-filter: none; -webkit-backdrop-filter: none; } }

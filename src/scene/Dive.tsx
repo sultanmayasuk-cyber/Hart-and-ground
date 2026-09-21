@@ -118,6 +118,7 @@ function Rig() {
   const slow = useRef(1 / 60) // running average frame time
   const frames = useRef(0)
   const quality = useRef(1)
+  const lines = useRef<HTMLElement | null>(null)
   useFrame((st, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30)
     state.p = SNAP ? page.dive : damp(state.p, page.dive, 3.2, dt)
@@ -143,6 +144,12 @@ function Rig() {
     if (inside_ !== soft.current) {
       soft.current = inside_
       res.set((inside_ ? (PHONE ? 0.7 : 1) : Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5)) * quality.current)
+    }
+    // phones: the cup lines are page text; they ride the same eased progress as the camera, written every frame
+    // (scroll events on iOS arrive in bursts, which is what made them jerk)
+    if (PHONE) {
+      lines.current ??= document.querySelector<HTMLElement>('.dive-quotes')
+      lines.current?.style.setProperty('--p', state.p.toFixed(4))
     }
     const t = st.clock.elapsedTime
     const cam = camera as PerspectiveCamera

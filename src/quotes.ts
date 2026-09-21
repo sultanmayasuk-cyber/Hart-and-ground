@@ -4,5 +4,5 @@ export const QUOTES = [
   'Some moments are meant to be savoured.', 'Leave room for the little things.', 'Good coffee, better company.', 'A good day starts here.',
   "You're exactly where you need to be.", 'Today deserves a little softness.', 'Rich in simple moments.', 'Take the long way home.',
 ]
-// A phone shows six of them, one at a time, each held in the middle of the screen long enough to read.
-export const PHONE_QUOTES = [QUOTES[0], QUOTES[3], QUOTES[5], QUOTES[6], QUOTES[10], QUOTES[11]]
+// A phone shows eight of them as page text, drifting up past you two at a time, near ones large, far ones small.
+export const PHONE_QUOTES = [QUOTES[0], QUOTES[1], QUOTES[3], QUOTES[5], QUOTES[6], QUOTES[7], QUOTES[10], QUOTES[11]]

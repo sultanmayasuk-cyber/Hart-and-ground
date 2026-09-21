@@ -150,7 +150,9 @@ export default function App() {
                 {PHONE && (
                   <div className="dive-quotes" aria-hidden>
                     {PHONE_QUOTES.map((q, i) => (
-                      <p key={q} className={`display dq ${i >= 4 ? 'on-milk' : ''}`} style={{ '--a': 0.34 + i * 0.092, '--b': 0.34 + i * 0.092 + 0.1 } as React.CSSProperties}>{q}</p>
+                      <p key={q} className={`display dq ${i >= 5 ? 'on-milk' : ''}`} style={{ '--a': 0.33 + i * 0.068, '--b': 0.33 + i * 0.068 + 0.15, '--x': [-1, 1, -0.4, 0.8, -0.9, 0.5, -0.6, 0.9][i], '--z': [1, 0.78, 0.9, 0.72, 1, 0.8, 0.92, 0.76][i] } as React.CSSProperties}>
+                        <span>{q}</span>
+                      </p>
                     ))}
                   </div>
                 )}
