@@ -226,14 +226,17 @@ function Warmup() {
 
 
 // Frames only once the drinks section is arriving: while the dive plays, the cups are parked below and nothing is drawn.
+// Once they're sent below for the story it keeps drawing until both really are out of sight (a transparent canvas
+// keeps its last frame: stopping on a timer left them hanging mid-air when the springs hadn't finished).
 function Pump() {
   const setFrameloop = useThree((st) => st.setFrameloop)
   useEffect(() => {
-    let rest = 0 // frames since the cups were sent below: enough for the springs to carry them out of sight
+    let rest = 0 // frames both cups have been out of sight below
     let on: boolean | null = null
     const tick = () => {
-      rest = page.act > 3.999 ? rest + 1 : 0
-      const want = (page.act > 0.0005 || stage.act > 0.0005) && rest < 150
+      const below = FLOOR - VIEW_H * 1.2
+      rest = page.act > 3.999 && where.coffee.y < below && where.matcha.y < below ? rest + 1 : 0
+      const want = (page.act > 0.0005 || stage.act > 0.0005) && rest < 12
       if (want !== on) setFrameloop((on = want) ? 'always' : 'never') // (every frame while they're on screen, none otherwise)
     }
     gsap.ticker.add(tick)
