@@ -57,11 +57,11 @@
   .hdr { color: var(--plum); transition: color 0.5s ease, translate 0.45s cubic-bezier(0.3, 0, 0.2, 1); }
   .hdr.away { translate: 0 -120%; }
   .hdr.on-plum, .hdr.on-dark { color: var(--cream); }
-  /* under the header the page is softly blurred (no colour of its own, so it's right over cream, purple, and the edge
-     between them), so text scrolling past doesn't run through the nav */
-  .hdr::before { content: ''; position: absolute; inset: 0 0 -1.5rem; z-index: -1; pointer-events: none; backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
-    mask-image: linear-gradient(#000 60%, transparent); -webkit-mask-image: linear-gradient(#000 60%, transparent); transition: opacity 0.5s ease; }
-  .hdr.in-dive::before { opacity: 0; }
+  /* under the nav a band in the page's own colour (--band, set every frame in App.tsx: cream, purple, or the two split at
+     a block's edge), fading out below, so text scrolling past can't run through the lettering */
+  .hdr::before { content: ''; position: absolute; inset: 0 0 -1.5rem; z-index: -1; pointer-events: none; background: var(--band, var(--cream));
+    mask-image: linear-gradient(#000 55%, transparent); -webkit-mask-image: linear-gradient(#000 55%, transparent); transition: opacity 0.5s ease; }
+  .hdr.in-dive::before { opacity: 0; } /* (the dive is a picture, not a block of colour) */
   .nav { font-family: "Cinzel", "Times New Roman", serif; font-weight: 500; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; }
   @media (max-width: 639px) { .nav { font-size: 10.5px; letter-spacing: 0.14em; } }
   .nav a { opacity: 0.8; transition: opacity 0.3s ease; }
@@ -87,8 +87,8 @@
   .dq:nth-child(even) span { animation-duration: 11s; animation-direction: alternate-reverse; }
   @keyframes drift { from { transform: translate3d(-2.2vw, 0.6svh, 0) rotate(-1.4deg); } to { transform: translate3d(2.2vw, -0.6svh, 0) rotate(1.4deg); } }
   .dq.on-milk { color: var(--plum); text-shadow: none; }
-  /* phones: nothing fixed and filtered over the 3D (the grain, the header's blur during the dive): both are costly on iOS */
-  @media (max-width: 767px) { .site::after { display: none; } .hdr.in-dive::before { display: none; } } /* (the header's blur stays: it's what keeps page text out of the nav; it just isn't there over the dive) */
+  /* phones: no grain fixed over the 3D (costly on iOS) */
+  @media (max-width: 767px) { .site::after { display: none; } }
 
   /* the loader: the stag grows up out of the ground while the cup is fetched, then the sheet lifts */
   .loader { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: var(--cream); color: var(--plum); transition: opacity 0.9s ease 0.15s, visibility 0s linear 1.1s; }

@@ -36,15 +36,54 @@ export default function App() {
   useEffect(() => {
     document.title = 'Hart & Ground · Café & Roasters, London'
     document.fonts.ready.then(() => ScrollTrigger.refresh()) // (the fonts reflow the page; the scroll marks follow)
+    const ticks: (() => void)[] = [] // (page-following work to unhook with the context)
     const ctx = gsap.context(() => {
-      // the header turns cream while something dark is under it
-      for (const id of ['#menu', '#rewards', '#footer'])
-        ScrollTrigger.create({ trigger: id, start: 'top 48px', end: 'bottom 48px', toggleClass: { targets: '.hdr', className: 'on-plum' } })
+      // The header wears the colour of the page under it, so text scrolling past can't run through the nav. The page
+      // is blocks of cream and purple; where a block's edge is inside the band, the band is split at that exact line,
+      // so it never shows one colour over the other. (Blurring the backdrop instead was silently a no-op in some
+      // browsers.) The lettering follows the colour under it.
+      const hdr = document.querySelector<HTMLElement>('.hdr')
+      const blocks = [...document.querySelectorAll<HTMLElement>('main > section, footer')]
+      const colour = (el: HTMLElement) => (el.classList.contains('plum') ? '#3a1730' : '#f3ebe1')
+      let last = ''
+      const band = () => {
+        if (!hdr) return
+        const reach = hdr.offsetHeight + 24 // the band, plus its fade
+        let under = colour(blocks[0])
+        let split = ''
+        for (let i = 0; i < blocks.length; i++) {
+          const top = blocks[i].getBoundingClientRect().top
+          if (top <= 0) under = colour(blocks[i])
+          else if (top < reach) {
+            split = `linear-gradient(${under} ${top}px, ${colour(blocks[i])} ${top}px)`
+            break
+          }
+        }
+        const next = split || under
+        if (next === last) return
+        last = next
+        hdr.style.setProperty('--band', next)
+        // the lettering: the colour under the middle of the nav
+        const mid = hdr.offsetHeight / 2
+        let at = colour(blocks[0])
+        for (const b of blocks) if (b.getBoundingClientRect().top <= mid) at = colour(b)
+        hdr.classList.toggle('on-plum', at === '#3a1730')
+      }
+      band()
+      window.addEventListener('scroll', band, { passive: true })
+      window.addEventListener('resize', band)
+      ticks.push(band)
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
       for (const el of gsap.utils.toArray<HTMLElement>('.reveal'))
         gsap.from(el, { opacity: 0, y: 26, duration: 1.3, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' } })
     }, root)
-    return () => ctx.revert()
+    return () => {
+      ctx.revert()
+      for (const t of ticks) {
+        window.removeEventListener('scroll', t)
+        window.removeEventListener('resize', t)
+      }
+    }
   }, [])
 
   // on a phone the header gets out of the way while you read down the page, and comes back the moment you scroll up

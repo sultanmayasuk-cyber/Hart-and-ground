@@ -28,7 +28,7 @@ export function useScrollDriver() {
       onUpdate: (s) => {
         page.dive = s.progress
         el?.style.setProperty('--dive', s.progress.toFixed(4))
-        hdr?.classList.toggle('in-dive', s.progress < 0.97)
+        hdr?.classList.toggle('in-dive', s.progress < 0.88) // (the menu's top passes the nav from ~0.91: the band must be there)
         hdr?.classList.toggle('on-dark', s.progress > 0.25 && s.progress < 0.72) // cream over the dark of the drink
       },
     })
