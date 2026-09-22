@@ -133,15 +133,12 @@
   .btn-gold:hover span { translate: 0.25em -0.05em; }
   .btn-gold:active { scale: 1.02; }
 
-  /* the story, one pinned screen: the logo assembles in the purple panel (--s 0..1) while the chapters come and go
-     beside it; at the end the panel grows to the whole screen (--f) and the closing line stands on the purple */
-  /* the fill goes wide first, then up to the top: the header's band turns purple once the panel is full width (0.86) */
-  .story { --s: 0; --f: clamp(0, (var(--s) - 0.8) * 9, 1); --fw: clamp(0, var(--f) * 2, 1); --fh: clamp(0, (var(--f) - 0.5) * 2, 1); }
+  /* the story, one pinned screen: the logo assembles in the purple panel (--s 0..1) while the chapters come and go beside it */
+  .story { --s: 0; }
   .story-stage { position: sticky; top: 0; height: 100lvh; overflow: hidden; }
-  .story-panel { position: absolute; left: calc(5vw * (1 - var(--fw))); top: calc(12svh * (1 - var(--fh))); width: calc(41vw * (1 - var(--fw)) + 100% * var(--fw)); height: calc(76svh * (1 - var(--fh)) + 100% * var(--fh));
-    border-radius: calc(2.5rem * (1 - var(--fh))); display: flex; align-items: center; justify-content: center; overflow: hidden;
+  .story-panel { position: absolute; left: 5vw; top: 12svh; width: 41vw; height: 76svh; border-radius: 2.5rem; display: flex; align-items: center; justify-content: center; overflow: hidden;
     background: radial-gradient(90% 70% at 50% 35%, #55264a 0%, var(--plum) 60%, #2a0f22 100%); }
-  .story-art { display: flex; flex-direction: column; align-items: center; gap: 5svh; width: 41vw; translate: calc(var(--f) * -24vw) 0; }
+  .story-art { display: flex; flex-direction: column; align-items: center; gap: 5svh; width: 100%; }
   .story-stag { display: block; height: 34svh; aspect-ratio: 505 / 470; clip-path: inset(calc(100% - clamp(0, var(--s) * 5, 1) * 100%) 0 0 0); translate: 0 calc((1 - clamp(0, var(--s) * 5, 1)) * 3rem); }
   /* HART is the first third of the lettering, GROUND the rest; the lines under it come last */
   .story-lock { width: min(72%, 26rem); clip-path: inset(0 calc(100% - (clamp(0, (var(--s) - 0.26) * 7, 1) * 34% + clamp(0, (var(--s) - 0.5) * 6, 1) * 66%)) 0 0); }
@@ -151,14 +148,12 @@
   .story-step h2 { font-size: clamp(2.2rem, 4.2vw, 5rem); line-height: 1.02; }
   .story-step h2.big { font-size: clamp(4rem, 9vw, 11rem); line-height: 0.9; }
   .story-step .prose { margin-top: 1.6rem; max-width: 28rem; }
-  .story-step.close { color: var(--cream); }
   @media (max-width: 767px) {
-    .story-panel { left: calc(1.5rem * (1 - var(--fw))); top: calc(12svh * (1 - var(--fh))); width: calc((100% - 3rem) * (1 - var(--fw)) + 100% * var(--fw)); height: calc(38svh * (1 - var(--fh)) + 100% * var(--fh)); border-radius: calc(1.6rem * (1 - var(--fh))); }
-    .story-art { width: 100%; gap: 2.5svh; translate: 0 calc(var(--f) * -22svh); }
+    .story-panel { left: 1.5rem; top: 12svh; width: calc(100% - 3rem); height: 38svh; border-radius: 1.6rem; }
+    .story-art { gap: 2.5svh; }
     .story-stag { height: 19svh; }
     .story-lock { width: min(64%, 15rem); }
     .story-step { left: 1.5rem; right: 1.5rem; top: 58svh; translate: 0 calc((0.5 - (var(--s) - var(--a)) / (var(--b) - var(--a))) * 2rem); text-align: center; max-width: none; }
-    .story-step.close { top: 62svh; }
   }
 
   /* the wallet card, on the purple under a warm light: stamped by scroll (--p), leaning with the cursor (--rx, --ry) */

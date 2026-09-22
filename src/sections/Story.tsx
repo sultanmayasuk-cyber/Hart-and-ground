@@ -4,9 +4,8 @@ import LogoLockup from '../LogoLockup'
 
 // The story explains the name, so the name assembles as it's told. One pinned screen: left, a purple panel where the
 // gold stag rises, then HART is uncovered, then GROUND, then the rest of the lockup (the real traced logo, by --s);
-// right, on clear cream, the chapters come and go one at a time beside it. For the last line the panel grows until it
-// is the whole screen, the lockup moves over to make room, and the closing words stand in cream on the purple, which
-// then runs straight on into the rewards. Nothing ever sits on top of the stag.
+// right, on clear cream, the chapters come and go one at a time beside it, the closing line last. Nothing ever sits on
+// top of the stag. (A finale where the panel grew to fill the screen was tried and dropped, 2026-09-22.)
 const step = (a: number, b: number) => ({ '--a': a, '--b': b }) as React.CSSProperties
 
 export default function Story() {
@@ -17,15 +16,12 @@ export default function Story() {
       trigger: el,
       start: 'top top',
       end: 'bottom bottom',
-      onUpdate: (s) => {
-        el.style.setProperty('--s', s.progress.toFixed(4))
-        el.classList.toggle('plum', s.progress > 0.86) // (the header's band follows the section's colour)
-      },
+      onUpdate: (s) => el.style.setProperty('--s', s.progress.toFixed(4)),
     })
     return () => st.kill()
   }, [])
   return (
-    <section id="story" ref={wrap} className="story relative h-[380svh]">
+    <section id="story" ref={wrap} className="story relative h-[340svh]">
       <div className="story-stage">
         <div className="story-panel">
           <div className="story-art">
@@ -47,7 +43,7 @@ export default function Story() {
           <h2 className="display big">Ground</h2>
           <p className="prose">The earth, the roast, and this quiet room on Sheen Lane.</p>
         </div>
-        <div className="story-step close" style={step(0.9, 1.6)}>
+        <div className="story-step" style={step(0.78, 1.6)}>
           <h2 className="display">Welcome to your daily pause.</h2>
         </div>
       </div>
