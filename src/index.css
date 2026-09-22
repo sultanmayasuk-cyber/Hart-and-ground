@@ -123,9 +123,7 @@
     opacity: clamp(0, min((var(--m) - var(--a)) * 10, (var(--b) - var(--m)) * 10), 1);
     translate: 0 calc((0.5 - (var(--m) - var(--a)) / (var(--b) - var(--a))) * 2.2rem); }
   .menu-step.high { top: 15svh; }
-  .menu-step.higher { top: 10svh; }
   .menu-step.door { top: 50%; transform: translateY(-50%); }
-  .menu-lines { line-height: 1.5; letter-spacing: 0.08em; }
   /* the door to the full menu: big gold words, a rule drawing out under them, cream in the hand */
   .menu-go { display: inline-block; position: relative; padding-bottom: 0.3em; color: var(--gold); font-size: clamp(2.4rem, 4.6vw, 4.6rem); line-height: 1.08; letter-spacing: 0.06em; transition: color 0.5s ease, letter-spacing 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
   .menu-go::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--gold); transform-origin: center; scale: clamp(0, (var(--m) - 0.66) * 5, 1) 1; transition: background 0.5s ease; }
