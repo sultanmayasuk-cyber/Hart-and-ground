@@ -50,11 +50,9 @@ export default function Loyalty() {
           {/* the words and the way in stand still the whole time; only the card moves */}
           <div className="rw-copy">
             <h2 className="display rw-title">Eight stamps.<br />Then one on us.</h2>
-            <p className="prose rw-lead">A card that lives in your phone, next to your train ticket. Every visit, a stamp. The ninth drink is ours.</p>
             <a className="btn-gold display" href={LINKS.rewards} target="_blank" rel="noreferrer">
               Get your card <span aria-hidden>→</span>
             </a>
-            <p className="prose small rw-wallets">Apple Wallet · Google Wallet · nothing to download</p>
           </div>
           <div className="card-stage">
             <div ref={card} className="card">
