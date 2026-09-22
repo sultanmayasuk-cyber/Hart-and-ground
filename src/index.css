@@ -99,7 +99,7 @@
 
   /* no 3D (old device, or motion turned down): the hero is a photograph, and nothing depends on the dive */
   .menu-still { display: none; }
-  .no-cups .menu-still { display: block; aspect-ratio: 1100 / 1210; width: min(60vw, 20rem); margin: 0 auto 5svh; }
+  .no-cups .menu-still { display: block; aspect-ratio: 1100 / 1210; width: min(74vw, 22rem); margin: 0 auto 2svh; }
   .no-cups .menu-sec .sticky .menu-still { position: absolute; left: 50%; bottom: 6svh; margin: 0; translate: -50% 0; width: min(38svh, 40vw); }
   .no-dive .menu-sec { margin-top: 0; border-radius: 0; }
   .no-dive .hero-copy { opacity: 1; translate: none; }
@@ -117,7 +117,11 @@
   .gold { color: var(--gold); }
   .gold-bg { background: var(--gold); }
 
-  /* the menu stage: pinned on the purple, the two cups are the show; the words come and go by --m (scroll progress) */
+  /* the menu stage: pinned on warm latte paper, the two cups are the show; the words come and go by --m (scroll progress) */
+  .latte { --latte: #e6d3bd; background: radial-gradient(70% 60% at 50% 42%, #f1e3d0 0%, var(--latte) 62%, #d8c1a7 100%); color: var(--plum); }
+  .latte .prose { opacity: 0.78; }
+  .latte .btn-gold { background: var(--plum); color: var(--cream); box-shadow: 0 14px 34px -14px rgb(58 23 48 / 0.7); }
+  .latte .btn-gold:hover { background: #4d2040; }
   .menu-sec { --m: 0; margin-top: -55svh; border-radius: 2.5rem 2.5rem 0 0; } /* it rises over the end of the dive, so there's no empty stretch between them */
   .menu-step { position: absolute; inset-inline: 0; padding-inline: 1.5rem; text-align: center;
     opacity: clamp(0, min((var(--m) - var(--a)) * 10, (var(--b) - var(--m)) * 10), 1);

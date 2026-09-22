@@ -9,11 +9,11 @@ import { CAM_Z, DRACO, HERO_FOV } from './cups'
 import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { page, VIEW_H } from './scroll'
+import PaperCup from './PaperCup'
 
-useGLTF.preload('/models/coffee.glb', DRACO)
 useGLTF.preload('/models/matcha.glb', DRACO)
 
-// The two real cups on a cream counter, the only 3D on the site. The camera never moves; the cups glide between marks
+// The two real cups (the hot coffee in its paper cup, the iced matcha) on a cream counter, the only 3D on the site. The camera never moves; the cups glide between marks
 // on springs as the page scrolls (page.act, driven by ScrollTriggers in App.tsx):
 //   0  waiting   below the page, out of sight, while the hero dive (Dive.tsx) plays
 //   1  centre    the pair in the middle of the menu stage, coffee in front
@@ -64,25 +64,36 @@ const POOL = new ShaderMaterial({
 })
 
 // where each cup is, for the other one to keep clear of
-const where = { coffee: { x: -10, y: 0, z: 0, s: 1, floor: 0 }, matcha: { x: 10, y: 0, z: 0, s: 1, floor: 0 } }
+const where = { hot: { x: -10, y: 0, z: 0, s: 1, floor: 0 }, matcha: { x: 10, y: 0, z: 0, s: 1, floor: 0 } }
 
-function Cup({ which }: { which: 'coffee' | 'matcha' }) {
-  const { scene } = useGLTF(`/models/${which}.glb`, DRACO)
-  const g = useRef<Group>(null)
-  const pos = useRef({ x: 0, y: FLOOR + VIEW_H * 1.2, z: 0, s: 1 }) // where the cup is: it chases its mark on a spring
-  const vel = useRef({ x: 0, y: 0, z: 0 })
-  const look = useRef({ yaw: 0, bank: 0, pitch: 0.04 })
-  const shadow = useRef<Mesh>(null)
+// the matcha: the Meshy model, finished and printed (the hot coffee is built in code: PaperCup.tsx)
+function Matcha() {
+  const { scene } = useGLTF('/models/matcha.glb', DRACO)
   useEffect(() => {
     scene.traverse((o) => {
       if (o instanceof Mesh) {
         const m = o.material as MeshStandardMaterial
         m.envMapIntensity = 1.3
         m.roughness = Math.min(m.roughness, 0.55)
-        finishCup(m, which)
+        finishCup(m, 'matcha')
       }
     })
   }, [scene])
+  return (
+    <>
+      <primitive object={scene} />
+      <CupPrint />
+    </>
+  )
+}
+
+function Cup({ which }: { which: 'hot' | 'matcha' }) {
+  const coffee = which === 'hot'
+  const g = useRef<Group>(null)
+  const pos = useRef({ x: 0, y: FLOOR + VIEW_H * 1.2, z: 0, s: 1 }) // where the cup is: it chases its mark on a spring
+  const vel = useRef({ x: 0, y: 0, z: 0 })
+  const look = useRef({ yaw: 0, bank: 0, pitch: 0.04 })
+  const shadow = useRef<Mesh>(null)
 
   useFrame((state, rawDt) => {
     const o = g.current
@@ -90,7 +101,6 @@ function Cup({ which }: { which: 'coffee' | 'matcha' }) {
     const dt = Math.min(rawDt, 1 / 30)
     const t = state.clock.elapsedTime
     const { size: S, vw, portrait: P, act } = stage
-    const coffee = which === 'coffee'
 
     // the marks. Front cup faces the reader; the one behind stands a step back and turned away a little
     const floor = FLOOR - VIEW_H * 0.14 * P // on a phone the counter sits lower, under the copy
@@ -140,7 +150,7 @@ function Cup({ which }: { which: 'coffee' | 'matcha' }) {
     // two solid cups: whatever the springs and the scroll are doing, they can never overlap. If they'd come closer than
     // their rims allow, each is pushed back out along the line between them (the one in front toward the camera)
     const me = where[which]
-    const other = where[coffee ? 'matcha' : 'coffee']
+    const other = where[coffee ? 'matcha' : 'hot']
     const min = (p.s + other.s) * 0.45 // rim radius is 0.386 of the height, plus a finger's gap
     let dx = p.x - other.x
     let dz = p.z - other.z
@@ -176,8 +186,7 @@ function Cup({ which }: { which: 'coffee' | 'matcha' }) {
   return (
     <>
       <group ref={g} position={[0, 10, 0]}>
-        <primitive object={scene} />
-        <CupPrint />
+        {coffee ? <PaperCup /> : <Matcha />}
       </group>
       <mesh ref={shadow} rotation-x={-Math.PI / 2} position={[0, -50, 0]} material={POOL} renderOrder={-1}>
         <planeGeometry />
@@ -235,7 +244,7 @@ function Pump() {
     let on: boolean | null = null
     const tick = () => {
       const below = FLOOR - VIEW_H * 1.2
-      rest = page.act > 3.999 && where.coffee.y < below && where.matcha.y < below ? rest + 1 : 0
+      rest = page.act > 3.999 && where.hot.y < below && where.matcha.y < below ? rest + 1 : 0
       const want = (page.act > 0.0005 || stage.act > 0.0005) && rest < 12
       if (want !== on) setFrameloop((on = want) ? 'always' : 'never') // (every frame while they're on screen, none otherwise)
     }
@@ -260,7 +269,7 @@ export default function Landing() {
         <directionalLight position={[3, 2, 4]} intensity={0.8} color="#eef2ff" />
         <ambientLight intensity={0.6} />
         <Suspense fallback={null}>
-          <Cup which="coffee" />
+          <Cup which="hot" />
           <Cup which="matcha" />
           <Warmup />
         </Suspense>

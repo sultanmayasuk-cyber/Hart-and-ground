@@ -44,7 +44,7 @@ export default function App() {
       // browsers.) The lettering follows the colour under it.
       const hdr = document.querySelector<HTMLElement>('.hdr')
       const blocks = [...document.querySelectorAll<HTMLElement>('main > section, footer')]
-      const colour = (el: HTMLElement) => (el.classList.contains('plum') ? '#3a1730' : '#f3ebe1')
+      const colour = (el: HTMLElement) => (el.classList.contains('plum') ? '#3a1730' : el.classList.contains('latte') ? '#e6d3bd' : '#f3ebe1')
       let last = ''
       const band = () => {
         if (!hdr) return

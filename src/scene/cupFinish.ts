@@ -89,3 +89,4 @@ outgoingLight += totalSpecular * (1.5 * rimZone() + 0.6 * cupDrop); // the lip a
   m.customProgramCacheKey = () => 'cup-finish'
   m.needsUpdate = true
 }
+
