@@ -124,14 +124,14 @@
     translate: 0 calc((0.5 - (var(--m) - var(--a)) / (var(--b) - var(--a))) * 2.2rem); }
   .menu-step.high { top: 15svh; }
   .menu-step.door { top: 50%; transform: translateY(-50%); }
-  /* the door to the full menu: a solid gold button, plum lettering, that lifts a little in the hand */
+  /* the door to the full menu: a solid gold button, plum lettering, that grows a little in the hand */
   .menu-btn { display: inline-flex; align-items: center; gap: 0.7em; margin-top: 2.2rem; padding: 1.05rem 2.3rem 1rem; border-radius: 999px; background: var(--gold); color: var(--plum);
     font-size: 0.92rem; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6);
-    transition: translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.4s ease, background 0.3s ease; }
+    transition: scale 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.3s ease; }
   .menu-btn span { font-family: "Crimson Pro", Georgia, serif; font-size: 1.3em; line-height: 0; translate: 0 -0.05em; transition: translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
-  .menu-btn:hover { translate: 0 -2px; background: #d9b56b; box-shadow: 0 16px 34px -12px rgb(0 0 0 / 0.65); }
+  .menu-btn:hover { scale: 1.05; background: #d9b56b; }
   .menu-btn:hover span { translate: 0.25em -0.05em; }
-  .menu-btn:active { translate: 0 0; }
+  .menu-btn:active { scale: 1.02; }
 
   /* the story: the logo assembles in a pinned purple panel (--s 0..1) while the chapters scroll past beside it */
   .story { --s: 0; padding-block: 12svh; }
