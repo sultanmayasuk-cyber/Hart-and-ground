@@ -100,7 +100,7 @@
   /* no 3D (old device, or motion turned down): the hero is a photograph, and nothing depends on the dive */
   .menu-still { display: none; }
   .no-cups .menu-still { display: block; aspect-ratio: 1100 / 1210; width: min(60vw, 20rem); margin: 0 auto 5svh; }
-  .no-cups .menu-inner { margin-inline: auto; max-width: 72rem; }
+  .no-cups .menu-sec .sticky .menu-still { position: absolute; left: 50%; bottom: 6svh; margin: 0; translate: -50% 0; width: min(38svh, 40vw); }
   .no-dive .menu-sec { margin-top: 0; border-radius: 0; }
   .no-dive .hero-copy { opacity: 1; translate: none; }
 
@@ -117,22 +117,21 @@
   .gold { color: var(--gold); }
   .gold-bg { background: var(--gold); }
 
-  /* the menu, set like the café's printed one: purple, gold heads, cream lines */
-  .menu-sec { margin-top: -55svh; border-radius: 2.5rem 2.5rem 0 0; } /* it rises over the end of the dive, so there's no empty stretch between them */
-  .cat { min-width: 0; }
-  .cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: 0.9rem; border-bottom: 1px solid color-mix(in oklab, var(--gold) 45%, transparent); }
-  .cat-head h3, .seasonal h3 { font-size: clamp(1.2rem, 1.45vw, 1.55rem); letter-spacing: 0.12em; }
-  .cat-head span { font-family: "Crimson Pro", Georgia, serif; font-style: italic; font-size: 0.95rem; opacity: 0.6; }
-  .cat h4 { margin-top: 1.5rem; font-family: "Cinzel", serif; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.55; }
-  .cat ul { margin-top: 0.7rem; }
-  .cat li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.6rem; padding: 0.4rem 0; font-family: "Crimson Pro", Georgia, serif; font-size: clamp(16px, 1.1vw, 19px); }
-  .cat li em { flex-basis: 100%; font-size: 0.8em; opacity: 0.5; }
-  .cat .dots { flex: 1; min-width: 2rem; border-bottom: 1px dotted color-mix(in oklab, var(--cream) 30%, transparent); translate: 0 -0.25em; }
-  .cat .price { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--gold); }
-  .menu-cta { display: inline-block; margin-top: 2.6rem; padding: 1.05rem 2.2rem; border: 1px solid var(--gold); border-radius: 999px; color: var(--gold); font-size: 0.95rem; letter-spacing: 0.16em; }
-  .menu-cta:active { background: var(--gold); color: var(--plum); }
-  .seasonal { border: 1px solid color-mix(in oklab, var(--gold) 40%, transparent); border-radius: 0.6rem; padding: 1.6rem; text-align: center; }
-  .seasonal p { margin-top: 0.5rem; font-family: "Crimson Pro", Georgia, serif; font-style: italic; opacity: 0.7; }
+  /* the menu stage: pinned on the purple, the two cups are the show; the words come and go by --m (scroll progress) */
+  .menu-sec { --m: 0; margin-top: -55svh; border-radius: 2.5rem 2.5rem 0 0; } /* it rises over the end of the dive, so there's no empty stretch between them */
+  .menu-step { position: absolute; inset-inline: 0; padding-inline: 1.5rem; text-align: center;
+    opacity: clamp(0, min((var(--m) - var(--a)) * 10, (var(--b) - var(--m)) * 10), 1);
+    translate: 0 calc((0.5 - (var(--m) - var(--a)) / (var(--b) - var(--a))) * 2.2rem); }
+  .menu-step.high { top: 15svh; }
+  .menu-step.higher { top: 10svh; }
+  .menu-step.door { top: 50%; transform: translateY(-50%); }
+  .menu-lines { line-height: 1.5; letter-spacing: 0.08em; }
+  /* the door to the full menu: big gold words, a rule drawing out under them, cream in the hand */
+  .menu-go { display: inline-block; position: relative; padding-bottom: 0.3em; color: var(--gold); font-size: clamp(2.4rem, 4.6vw, 4.6rem); line-height: 1.08; letter-spacing: 0.06em; transition: color 0.5s ease, letter-spacing 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .menu-go::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--gold); transform-origin: center; scale: clamp(0, (var(--m) - 0.66) * 5, 1) 1; transition: background 0.5s ease; }
+  .menu-go:hover { color: var(--cream); letter-spacing: 0.1em; }
+  .menu-go:hover::after { background: var(--cream); }
+  @media (max-width: 767px) { .menu-go::after { scale: 1 1; } } /* (a phone's menu isn't pinned: the rule is just there) */
 
   /* the story: the logo assembles in a pinned purple panel (--s 0..1) while the chapters scroll past beside it */
   .story { --s: 0; padding-block: 12svh; }

@@ -3,8 +3,8 @@ import { useEffect } from 'react'
 
 // What the scene needs to know about the page, written by ScrollTriggers in App.tsx and read every frame by the cups.
 // dive: progress through the hero dive (Dive.tsx), 0..1.
-// act: which mark the cups are at: 0 waiting below (during the dive), 1 drinks (coffee in front), 2 drinks (matcha in front),
-// 3 gone below the counter.
+// act: which mark the cups are at: 0 waiting below (during the dive), 1 centre stage (coffee in front), 2 traded (matcha
+// in front), 3 parted to either edge round the door to the menu, 4 gone below the counter.
 export const page = { dive: 0, act: 0 }
 
 export function useScrollDriver() {
@@ -15,9 +15,11 @@ export function useScrollDriver() {
     }
     let hero = 0
     let drinks = 0
+    let part = 0
     let story = 0
-    const set = () => (page.act = hero + seg(drinks, 0, 1) + story)
+    const set = () => (page.act = hero + drinks + part + story)
     const el = document.getElementById('dive')
+    const menu = document.getElementById('menu')
     const hdr = document.querySelector('.hdr')
     const dive = ScrollTrigger.create({
       trigger: '#dive',
@@ -32,15 +34,26 @@ export function useScrollDriver() {
     })
     // the cups rise with the menu as it comes up over the end of the dive
     const a = ScrollTrigger.create({ trigger: '#menu', start: 'top 70%', end: 'top 5%', onUpdate: (s) => { hero = s.progress; set() } })
-    // they trade places as the Matcha Collection comes up the page
-    // (a phone has no menu list, and no live cups to trade)
-    const b = document.querySelector('#cat-matcha') && ScrollTrigger.create({ trigger: '#cat-matcha', start: 'top 72%', end: 'top 38%', onUpdate: (s) => { drinks = s.progress; set() } })
+    // the menu stage is pinned: over its scroll the cups trade places, then part round the door to the full menu
+    // (a phone's menu section isn't pinned and has no live cups; the trigger is harmless there)
+    const b = ScrollTrigger.create({
+      trigger: '#menu',
+      start: 'top top',
+      end: 'bottom bottom',
+      onUpdate: (s) => {
+        const p = s.progress
+        menu?.style.setProperty('--m', p.toFixed(4))
+        drinks = seg(p, 0.24, 0.5)
+        part = seg(p, 0.52, 0.74)
+        set()
+      },
+    })
     // the cups sink under the page as the story arrives
     const c = ScrollTrigger.create({ trigger: '#story', start: 'top bottom', end: 'top 25%', onUpdate: (s) => { story = seg(s.progress, 0, 1); set() } })
     return () => {
       dive.kill()
       a.kill()
-      if (b) b.kill()
+      b.kill()
       c.kill()
     }
   }, [])

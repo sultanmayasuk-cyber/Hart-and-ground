@@ -16,9 +16,10 @@ useGLTF.preload('/models/matcha.glb', DRACO)
 // The two real cups on a cream counter, the only 3D on the site. The camera never moves; the cups glide between marks
 // on springs as the page scrolls (page.act, driven by ScrollTriggers in App.tsx):
 //   0  waiting   below the page, out of sight, while the hero dive (Dive.tsx) plays
-//   1  drinks    the pair on the left, coffee in front
-//   2  drinks    they trade, matcha in front (one slow turn on the way)
-//   3  gone      both sink below the counter as the plum story block arrives
+//   1  centre    the pair in the middle of the menu stage, coffee in front
+//   2  traded    they change places, matcha in front (one slow turn on the way)
+//   3  parted    they step aside to either edge, facing in, round the door to the full menu
+//   4  gone      both sink below the counter as the plum story block arrives
 const FLOOR = -VIEW_H * 0.42
 const CAM_HEIGHT = 1.35 // raised a little, looking down into the cups (the ice shows)
 const SPRING = 14 // critically damped: weight, no wobble
@@ -95,20 +96,26 @@ function Cup({ which }: { which: 'coffee' | 'matcha' }) {
     const floor = FLOOR - VIEW_H * 0.14 * P // on a phone the counter sits lower, under the copy
     const front = (x: number): Mark => ({ x, y: floor, z: 0.3, s: S * 1.1, yaw: 0 })
     const behind = (x: number): Mark => ({ x, y: floor, z: -1.6, s: S * 0.95, yaw: coffee ? 0.55 : -0.55 })
-    const drinks1 = coffee ? front(lerp(-vw * 0.225, 0, P)) : behind(lerp(-vw * 0.405, vw * 0.3, P))
-    // waiting: under the page, so they come up into the drinks section as it arrives
+    // centre stage: the front cup a little left of the middle, the other a step back to the right
+    const drinks1 = coffee ? front(lerp(-vw * 0.07, 0, P)) : behind(lerp(vw * 0.16, vw * 0.3, P))
+    // waiting: under the page, so they come up into the menu stage as it arrives
     const hero: Mark = { ...drinks1, y: floor - VIEW_H * 1.3 }
-    const drinks2 = coffee ? behind(lerp(-vw * 0.405, -vw * 0.3, P)) : front(lerp(-vw * 0.225, 0, P))
+    const drinks2 = coffee ? behind(lerp(-vw * 0.16, -vw * 0.3, P)) : front(lerp(vw * 0.07, 0, P))
     let m = mix(hero, drinks1, smooth(clamp01(act)))
     m = mix(m, drinks2, smooth(clamp01(act - 1)))
     // trading places they go round each other, never through: the one coming forward swings out toward the camera,
     // the one stepping back passes behind it, a full cup's width apart where their paths cross
     const round = Math.sin(Math.PI * smooth(clamp01(act - 1)))
-    m.z += (coffee ? -1 : 1) * 1.7 * round
-    m.y += (coffee ? 0 : 1) * 0.12 * S * round // and the one in front lifts a little as it comes by
-    // 3 · gone, under the page, as the story arrives
-    const gone: Mark = { ...drinks2, y: FLOOR - VIEW_H * 1.8, s: S * 0.9 }
-    m = mix(m, gone, smooth(clamp01(act - 2)))
+    // (the one stepping back does most of the passing: coming too far forward it would grow over the words above)
+    m.z += (coffee ? -2.1 : 0.9) * round
+    m.y += (coffee ? 0 : 1) * 0.05 * S * round // and the one in front lifts a little as it comes by
+    // 3 · parted: each to its own edge, the same size, turned a little toward the door between them
+    // (on a wide screen they don't go all the way to the edges: the door between them is only so wide)
+    const parted: Mark = { x: (coffee ? -1 : 1) * Math.min(lerp(vw * 0.37, vw * 0.3, P), VIEW_H * 0.56), y: floor, z: 0.45, s: S * 1.05, yaw: coffee ? 0.32 : -0.32 }
+    m = mix(m, parted, smooth(clamp01(act - 2)))
+    // 4 · gone, under the page, as the story arrives
+    const gone: Mark = { ...parted, y: FLOOR - VIEW_H * 1.8, s: S * 0.9 }
+    m = mix(m, gone, smooth(clamp01(act - 3)))
     // the cup coming forward in the trade turns once, all the way round, on its way
     const trade = smooth(clamp01(act - 1))
     const twirl = (coffee ? -1 : 1) * 2 * Math.PI * trade
@@ -225,7 +232,7 @@ function Pump() {
     let rest = 0 // frames since the cups were sent below: enough for the springs to carry them out of sight
     let on: boolean | null = null
     const tick = () => {
-      rest = page.act > 2.999 ? rest + 1 : 0
+      rest = page.act > 3.999 ? rest + 1 : 0
       const want = (page.act > 0.0005 || stage.act > 0.0005) && rest < 150
       if (want !== on) setFrameloop((on = want) ? 'always' : 'never') // (every frame while they're on screen, none otherwise)
     }
