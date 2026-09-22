@@ -1,6 +1,7 @@
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef } from 'react'
+import Hours from '../Hours'
 import { LINKS } from '../links'
 
 // The Visit section's map: drawn by hand on a canvas from OpenStreetMap data baked by scripts/build-map.mjs
@@ -263,6 +264,7 @@ export default function MapZoom() {
             <address className="prose mt-6 not-italic">
               Hart &amp; Ground<br />Sheen Lane, London SW14 8AD<br />Two minutes from Mortlake station
             </address>
+            <Hours className="mt-5" />
             <p className="prose mt-5 flex flex-wrap gap-x-7 gap-y-2">
               <a className="link" href={LINKS.maps} target="_blank" rel="noreferrer">Directions</a>
               <a className="link" href={LINKS.phone}>{LINKS.phoneText}</a>

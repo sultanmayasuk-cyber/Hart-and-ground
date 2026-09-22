@@ -2,6 +2,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { LIVE3D, LIVE_CUPS, PHONE } from './env'
+import { clock, HOURS } from './openingHours'
 import { PHONE_QUOTES } from './quotes'
 import { useLenis } from './hooks/useLenis'
 import { LINKS } from './links'
@@ -188,7 +189,10 @@ export default function App() {
           <a href={LINKS.snapchat} target="_blank" rel="noreferrer">Snapchat</a>
           <a href={LINKS.phone}>{LINKS.phoneText}</a>
         </nav>
-        <p className="prose small mt-[8svh]">Sheen Lane, London SW14 8AD · © 2026 Hart &amp; Ground</p>
+        <p className="prose small mt-[8svh]">
+          {HOURS.map((h) => `${h.days} ${clock(h.open)} – ${clock(h.close)}`).join(' · ')}
+        </p>
+        <p className="prose small mt-2">Sheen Lane, London SW14 8AD · © 2026 Hart &amp; Ground</p>
       </footer>
     </div>
   )

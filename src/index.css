@@ -190,6 +190,14 @@
   @media (max-width: 767px) { .visit .visit-copy { background: linear-gradient(var(--cream) 0%, color-mix(in oklab, var(--cream) 85%, transparent) 38%, transparent 56%); } .visit-step { top: 17svh; } }
   .visit-copy { background: linear-gradient(90deg, var(--cream) 0%, color-mix(in oklab, var(--cream) 80%, transparent) 30%, transparent 58%); }
 
+  /* opening hours beside the door: a live line (a gold point while the café is open), then the two rows on a hairline */
+  .hours-now { display: flex; align-items: center; gap: 0.6em; }
+  .hours-now::before { content: ''; width: 0.42em; height: 0.42em; border-radius: 50%; background: currentColor; opacity: 0.35; }
+  .hours-now.open::before { background: var(--gold); opacity: 1; box-shadow: 0 0 0 0.22em color-mix(in oklab, var(--gold) 28%, transparent); }
+  .hours-rows { display: grid; grid-template-columns: auto auto; justify-content: start; column-gap: 2.2em; margin-top: 0.5em; padding-top: 0.5em; border-top: 1px solid color-mix(in oklab, currentColor 22%, transparent); width: fit-content; min-width: 17rem; }
+  .hours-rows > div { display: contents; }
+  .hours-rows dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
   /* the plum block */
   .plum { background: var(--plum); color: var(--cream); }
   .plum .prose { opacity: 0.8; }
