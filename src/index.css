@@ -125,13 +125,13 @@
   .menu-step.high { top: 15svh; }
   .menu-step.door { top: 50%; transform: translateY(-50%); }
   /* the door to the full menu: a solid gold button, plum lettering, that grows a little in the hand */
-  .menu-btn { display: inline-flex; align-items: center; gap: 0.7em; margin-top: 2.2rem; padding: 1.05rem 2.3rem 1rem; border-radius: 999px; background: var(--gold); color: var(--plum);
+  .btn-gold { display: inline-flex; align-items: center; gap: 0.7em; margin-top: 2.2rem; padding: 1.05rem 2.3rem 1rem; border-radius: 999px; background: var(--gold); color: var(--plum);
     font-size: 0.92rem; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6);
     transition: scale 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.3s ease; }
-  .menu-btn span { font-family: "Crimson Pro", Georgia, serif; font-size: 1.3em; line-height: 0; translate: 0 -0.05em; transition: translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
-  .menu-btn:hover { scale: 1.05; background: #d9b56b; }
-  .menu-btn:hover span { translate: 0.25em -0.05em; }
-  .menu-btn:active { scale: 1.02; }
+  .btn-gold span { font-family: "Crimson Pro", Georgia, serif; font-size: 1.3em; line-height: 0; translate: 0 -0.05em; transition: translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .btn-gold:hover { scale: 1.05; background: #d9b56b; }
+  .btn-gold:hover span { translate: 0.25em -0.05em; }
+  .btn-gold:active { scale: 1.02; }
 
   /* the story: the logo assembles in a pinned purple panel (--s 0..1) while the chapters scroll past beside it */
   .story { --s: 0; padding-block: 12svh; }
@@ -159,14 +159,24 @@
   /* the wallet card, on the purple under a warm light: stamped by scroll (--p), leaning with the cursor (--rx, --ry) */
   .rewards { --p: 0; }
   .rw-glow { position: absolute; left: 50%; top: 50%; width: 90vmin; height: 90vmin; translate: -50% -50%; border-radius: 50%; background: radial-gradient(closest-side, rgb(201 163 92 / 0.22), transparent); pointer-events: none; }
-  .rw-titles, .rw-foot { position: relative; width: 100%; text-align: center; }
-  .rw-titles { height: 16svh; }
-  .rw-foot { height: 12svh; }
-  .rw-titles h2 { font-size: clamp(1.9rem, 4vw, 4.4rem); }
-  .rewards .rw-step.rw-step { position: absolute; left: 50%; top: 50%; width: min(100%, 44rem); translate: -50% -50%; opacity: clamp(0, min((var(--p) - var(--a)) * 16, (var(--b) - var(--p)) * 16), 1); }
-  .card-stage { perspective: 1600px; margin: 3svh 0; }
-  .card { --rx: 0; --ry: 0; --flip: clamp(0, (var(--p) - 0.78) * 12, 1); position: relative; width: min(88vw, 40rem, 78svh); aspect-ratio: 1.586; transform-style: preserve-3d;
+  .rw-grid { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: center; gap: clamp(2rem, 5vw, 6rem); padding: 0 clamp(1.5rem, 6vw, 7rem); }
+  .rw-copy { position: relative; z-index: 1; }
+  .rw-title { font-size: clamp(2rem, 4.2vw, 4.6rem); }
+  .rw-lead { margin-top: 1.6rem; max-width: 26rem; }
+  .rw-wallets { margin-top: 1.4rem; }
+  @media (max-width: 767px) {
+    .rw-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; align-items: start; gap: 0; padding: 14svh 1.5rem 6svh; text-align: center; }
+    .rw-title { font-size: 9vw; }
+    .rw-lead { display: none; }
+    .rw-copy { display: contents; }
+    .rw-copy .btn-gold { grid-row: 3; justify-self: center; margin-top: 0; }
+    .rw-wallets { grid-row: 4; margin-top: 0.9rem; }
+    .card-stage { grid-row: 2; align-self: center; justify-self: center; }
+  }
+  .card-stage { perspective: 1600px; }
+  .card { --rx: 0; --ry: 0; --flip: clamp(0, (var(--p) - 0.78) * 12, 1); position: relative; width: min(88vw, 44rem, 60svh); aspect-ratio: 1.586; transform-style: preserve-3d;
     transform: rotateY(calc(var(--rx) * 10deg + var(--flip) * 180deg - 10deg + var(--p) * 20deg)) rotateX(calc(var(--ry) * -8deg + 5deg)); }
+  @media (min-width: 768px) { .card { width: min(46vw, 44rem, 78svh); } }
   .card-face { position: absolute; inset: 0; overflow: hidden; border-radius: 1.4rem; padding: clamp(1.2rem, 2.6vw, 2.2rem); backface-visibility: hidden; display: flex; flex-direction: column; justify-content: space-between; color: var(--gold);
     background: radial-gradient(120% 140% at 20% 0%, #6a2f56 0%, #46203b 50%, #2c1024 100%); border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
     box-shadow: 0 50px 90px -30px rgb(0 0 0 / 0.65), 0 0 0 1px rgb(255 255 255 / 0.04) inset; }

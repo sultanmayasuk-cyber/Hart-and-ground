@@ -16,7 +16,7 @@ function Door({ big }: { big?: boolean }) {
     <>
       <h2 className={`display ${big ? 'text-[11vw]' : 'text-[4.6vw]'}`}>The full menu</h2>
       <p className="prose mx-auto mt-6 max-w-[24rem]">Sizes, prices and today's special, all of it. Order ahead and it's waiting on the counter.</p>
-      <a className="menu-btn display" href={LINKS.order} target="_blank" rel="noreferrer">
+      <a className="btn-gold display" href={LINKS.order} target="_blank" rel="noreferrer">
         Open the menu <span aria-hidden>→</span>
       </a>
     </>
