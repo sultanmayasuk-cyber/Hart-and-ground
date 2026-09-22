@@ -10,11 +10,16 @@ import { LINKS } from '../links'
 // Words come and go by --m (the section's scroll progress, scene/scroll.ts), each step fading in and out on its own.
 const step = (a: number, b: number) => ({ '--a': a, '--b': b }) as React.CSSProperties
 
-function Door() {
+// the door: the words, then a solid gold button that can't be mistaken for anything else
+function Door({ big }: { big?: boolean }) {
   return (
-    <a className="menu-go display" href={LINKS.order} target="_blank" rel="noreferrer">
-      See the<br />full menu
-    </a>
+    <>
+      <h2 className={`display ${big ? 'text-[11vw]' : 'text-[4.6vw]'}`}>The full menu</h2>
+      <p className="prose mx-auto mt-6 max-w-[24rem]">Sizes, prices and today's special, all of it. Order ahead and it's waiting on the counter.</p>
+      <a className="menu-btn display" href={LINKS.order} target="_blank" rel="noreferrer">
+        Open the menu <span aria-hidden>→</span>
+      </a>
+    </>
   )
 }
 
@@ -23,9 +28,7 @@ function PhoneMenu() {
   return (
     <section id="menu" className="menu-sec plum relative z-[6] px-6 pb-[16svh] pt-[12svh] text-center">
       <img className="menu-still" src="/cups-still.webp" alt="A flat white and an iced matcha in Hart & Ground cups" onLoad={() => ScrollTrigger.refresh()} />
-      <h2 className="display reveal text-[11vw]">Coffee. Tea.<br />Matcha.</h2>
-      <p className="prose reveal mx-auto mt-8 max-w-[22rem]">Sizes, prices and today's special are all on the menu. Order ahead and it's waiting on the counter.</p>
-      <div className="reveal mt-10"><Door /></div>
+      <div className="reveal"><Door big /></div>
     </section>
   )
 }
@@ -42,7 +45,6 @@ export default function Menu() {
         </div>
         <div className="menu-step door pointer-events-auto" style={step(0.6, 1.6)}>
           <Door />
-          <p className="prose mx-auto mt-8 max-w-[26rem]">Sizes, prices and today's special are all on the menu. Order ahead and it's waiting on the counter.</p>
         </div>
       </div>
     </section>

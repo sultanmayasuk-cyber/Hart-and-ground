@@ -124,12 +124,14 @@
     translate: 0 calc((0.5 - (var(--m) - var(--a)) / (var(--b) - var(--a))) * 2.2rem); }
   .menu-step.high { top: 15svh; }
   .menu-step.door { top: 50%; transform: translateY(-50%); }
-  /* the door to the full menu: big gold words, a rule drawing out under them, cream in the hand */
-  .menu-go { display: inline-block; position: relative; padding-bottom: 0.3em; color: var(--gold); font-size: clamp(2.4rem, 4.6vw, 4.6rem); line-height: 1.08; letter-spacing: 0.06em; transition: color 0.5s ease, letter-spacing 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
-  .menu-go::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--gold); transform-origin: center; scale: clamp(0, (var(--m) - 0.66) * 5, 1) 1; transition: background 0.5s ease; }
-  .menu-go:hover { color: var(--cream); letter-spacing: 0.1em; }
-  .menu-go:hover::after { background: var(--cream); }
-  @media (max-width: 767px) { .menu-go::after { scale: 1 1; } } /* (a phone's menu isn't pinned: the rule is just there) */
+  /* the door to the full menu: a solid gold button, plum lettering, that lifts a little in the hand */
+  .menu-btn { display: inline-flex; align-items: center; gap: 0.7em; margin-top: 2.2rem; padding: 1.05rem 2.3rem 1rem; border-radius: 999px; background: var(--gold); color: var(--plum);
+    font-size: 0.92rem; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6);
+    transition: translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.4s ease, background 0.3s ease; }
+  .menu-btn span { font-family: "Crimson Pro", Georgia, serif; font-size: 1.3em; line-height: 0; translate: 0 -0.05em; transition: translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .menu-btn:hover { translate: 0 -2px; background: #d9b56b; box-shadow: 0 16px 34px -12px rgb(0 0 0 / 0.65); }
+  .menu-btn:hover span { translate: 0.25em -0.05em; }
+  .menu-btn:active { translate: 0 0; }
 
   /* the story: the logo assembles in a pinned purple panel (--s 0..1) while the chapters scroll past beside it */
   .story { --s: 0; padding-block: 12svh; }
