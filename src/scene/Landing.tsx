@@ -66,6 +66,7 @@ const POOL = new ShaderMaterial({
 })
 
 // where each cup is, for the other one to keep clear of
+const HOT_SIZE = 0.8
 const where = { hot: { x: -10, y: 0, z: 0, s: 1, floor: 0 }, matcha: { x: 10, y: 0, z: 0, s: 1, floor: 0 } }
 
 // the matcha: the Meshy model, finished and printed (the hot coffee is built in code: PaperCup.tsx)
@@ -137,6 +138,7 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     // 4 · gone, under the page, as the story arrives
     const gone: Mark = { ...parted, y: FLOOR - VIEW_H * 1.8, s: S * 0.9 }
     m = mix(m, gone, smooth(clamp01(act - 3)))
+    m.s *= coffee ? HOT_SIZE : 1 // the paper cup stands smaller than the iced matcha (the client's call, 2026-09-23)
     // the cup coming forward in the trade turns once, all the way round, on its way
     const trade = smooth(clamp01(act - 1))
     const twirl = (coffee ? -1 : 1) * 2 * Math.PI * trade
