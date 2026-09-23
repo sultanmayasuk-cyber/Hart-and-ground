@@ -126,10 +126,10 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     // (a phone has no room either side of the door: there they step down to the foot of the screen, side by side, and
     // the door stands above them)
     const parted: Mark = {
-      x: (coffee ? -1 : 1) * lerp(Math.min(vw * 0.37, VIEW_H * 0.56), vw * 0.26, P),
-      y: floor - VIEW_H * 0.1 * P,
+      x: (coffee ? -1 : 1) * lerp(Math.min(vw * 0.37, VIEW_H * 0.56), vw * 0.27, P),
+      y: floor + VIEW_H * 0.07 * P, // (raised on a phone: they stand right under the words, big, not off at the foot)
       z: lerp(0.45, 0, P),
-      s: S * lerp(1.05, 0.95, P),
+      s: S * lerp(1.05, 1.18, P),
       yaw: (coffee ? 0.32 : -0.32) * (1 - P * 0.4),
     }
     m = mix(m, parted, smooth(clamp01(act - 2)))
