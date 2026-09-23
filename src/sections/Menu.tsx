@@ -18,7 +18,7 @@ function Door() {
   return (
     <>
       <h2 className="display text-[10vw] md:text-[4.6vw]">The full menu</h2>
-      <p className="prose mx-auto mt-6 max-w-[24rem]">Sizes, prices and today's special, all of it. Order ahead and it's waiting on the counter.</p>
+      <p className="prose mx-auto mt-6 hidden max-w-[24rem] md:block">Sizes, prices and today's special, all of it. Order ahead and it's waiting on the counter.</p>
       <a className="btn-gold display" href={LINKS.order} target="_blank" rel="noreferrer">
         Open the menu <span aria-hidden>→</span>
       </a>
