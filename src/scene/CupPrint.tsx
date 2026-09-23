@@ -8,7 +8,7 @@ import { BufferAttribute, BufferGeometry, CanvasTexture, EquirectangularReflecti
 export type CupKind = 'cold' | 'hot'
 const CUPS = {
   cold: { radius: (y: number) => 0.2525 + 0.0864 * y, ink: '#74203f', logo: [0.2, 0.66], line: [0.3, 0.36], foil: false },
-  hot: { radius: (y: number) => 0.238 + 0.0899 * y, ink: '#e0b048', logo: [0.3, 0.69], line: [0.4, 0.46], foil: true },
+  hot: { radius: (y: number) => 0.238 + 0.0899 * y, ink: '#e0b048', logo: [0.2, 0.78], line: [0.4, 0.46], foil: true },
 } as const
 
 // A band hugging the wall between heights y0..y1, `span` radians wide, centred on local +z (the cup's front).
