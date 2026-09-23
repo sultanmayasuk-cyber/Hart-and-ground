@@ -1,4 +1,4 @@
-import gsap from 'gsap'
+import { onFrame } from '../frame'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef } from 'react'
 import Hours from '../Hours'
@@ -227,7 +227,7 @@ export default function MapZoom() {
     const tick = () => {
       if (visible) draw()
     }
-    gsap.ticker.add(tick)
+    const stop = onFrame(tick)
     const st = ScrollTrigger.create({
       trigger: wrap.current,
       start: 'top top',
@@ -241,7 +241,7 @@ export default function MapZoom() {
       st.kill()
       io.disconnect()
       near.disconnect()
-      gsap.ticker.remove(tick)
+      stop()
       window.removeEventListener('resize', resize)
     }
   }, [])

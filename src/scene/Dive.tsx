@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, Lightformer, useGLTF } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import gsap from 'gsap'
+import { onFrame } from '../frame'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AdditiveBlending,
@@ -860,17 +860,21 @@ function Warmup() {
 // (the drinks section's own canvas takes over from there).
 function Pump() {
   const setFrameloop = useThree((st) => st.setFrameloop)
+  const invalidate = useThree((st) => st.invalidate)
+  const get = useThree((st) => st.get)
   useEffect(() => {
     // Runs every frame while the dive is on screen, not at all once it's scrolled past. (It used to ask for one frame
     // at a time from gsap's ticker; that raced the renderer's own loop and drew only every other frame: 30 a second.)
-    let on: boolean | null = null
     const tick = () => {
       const want = page.dive < 0.999 || Math.abs(state.p - page.dive) > 1e-4
-      if (want !== on) setFrameloop((on = want) ? 'always' : 'never')
+      const loop = want ? 'always' : 'never'
+      if (get().frameloop !== loop) { // (against the renderer's own state, every frame; see Landing.tsx)
+        setFrameloop(loop)
+        if (want) invalidate()
+      }
     }
-    gsap.ticker.add(tick)
-    return () => gsap.ticker.remove(tick)
-  }, [setFrameloop])
+    return onFrame(tick)
+  }, [setFrameloop, invalidate, get])
   return null
 }
 

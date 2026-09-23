@@ -1,5 +1,5 @@
 import { Environment, Lightformer, useGLTF } from '@react-three/drei'
-import gsap from 'gsap'
+import { onFrame } from '../frame'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useRef } from 'react'
 import { Mesh, ShaderMaterial, Texture, type Group, type MeshStandardMaterial } from 'three'
@@ -32,7 +32,7 @@ const smooth = (x: number) => x * x * (3 - 2 * x)
 const lerp = (a: number, b: number, w: number) => a + (b - a) * w
 
 // viewport-derived layout, recomputed every frame. ready: textures uploaded and shaders compiled (see Warmup)
-const stage = { size: 1.6, vw: 5, portrait: 0, act: 0, ready: false }
+const stage = { size: 1.6, vw: 5, portrait: 0, act: 0, ready: false, frames: 0, loop: '' }
 function Layout() {
   useFrame((state, dt) => {
     const vw = (VIEW_H * state.size.width) / state.size.height
@@ -42,6 +42,8 @@ function Layout() {
     stage.portrait = portrait
     stage.size = Math.min(VIEW_H * lerp(0.54, 0.34, portrait), vw * lerp(0.42, 0.6, portrait)) // (a phone's cups are sized to its width)
     stage.act = SNAP ? page.act : damp(stage.act, page.act, 6, Math.min(dt, 1 / 30))
+    stage.frames++
+    stage.loop = state.frameloop
   })
   return null
 }
@@ -117,7 +119,7 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     // the one stepping back passes behind it, a full cup's width apart where their paths cross
     const round = Math.sin(Math.PI * smooth(clamp01(act - 1)))
     // (the one stepping back does most of the passing: coming too far forward it would grow over the words above)
-    m.z += (coffee ? -2.1 : 0.9) * round
+    m.z += (coffee ? -2.1 : lerp(0.9, 0.35, P)) * round // (less on a phone: coming forward it would fill the screen)
     m.y += (coffee ? 0 : 1) * 0.05 * S * round // and the one in front lifts a little as it comes by
     // 3 · parted: each to its own edge, the same size, turned a little toward the door between them
     // (on a wide screen they don't go all the way to the edges: the door between them is only so wide)
@@ -229,8 +231,10 @@ function Warmup() {
       for (const mat of Array.isArray(o.material) ? o.material : [o.material])
         for (const v of Object.values(mat)) if (v instanceof Texture) gl.initTexture(v)
     })
+    const dbg = (window as unknown as { __cups?: Record<string, unknown> })
+    dbg.__cups = { stage, where, err: '' }
     gl.compileAsync(scene, camera)
-      .catch(() => {})
+      .catch((e: unknown) => { dbg.__cups!.err = String(e) })
       .finally(() => {
         if (alive) stage.ready = true
       })
@@ -247,18 +251,25 @@ function Warmup() {
 // keeps its last frame: stopping on a timer left them hanging mid-air when the springs hadn't finished).
 function Pump() {
   const setFrameloop = useThree((st) => st.setFrameloop)
+  const invalidate = useThree((st) => st.invalidate)
+  const get = useThree((st) => st.get)
   useEffect(() => {
     let rest = 0 // frames both cups have been out of sight below
-    let on: boolean | null = null
     const tick = () => {
       const below = FLOOR - VIEW_H * 1.2
       rest = page.act > 3.999 && where.hot.y < below && where.matcha.y < below ? rest + 1 : 0
       const want = (page.act > 0.0005 || stage.act > 0.0005) && rest < 12
-      if (want !== on) setFrameloop((on = want) ? 'always' : 'never') // (every frame while they're on screen, none otherwise)
+      // checked against the renderer's own state every frame, not remembered: the <Canvas frameloop="never"> prop is
+      // re-applied whenever the canvas resizes (a phone's toolbar sliding), which silently put it back to 'never'; and
+      // 'always' doesn't restart a loop that has already stopped, so it gets one kick (found on iOS, 2026-09-23)
+      const loop = want ? 'always' : 'never'
+      if (get().frameloop !== loop) {
+        setFrameloop(loop) // (every frame while they're on screen, none otherwise)
+        if (want) invalidate()
+      }
     }
-    gsap.ticker.add(tick)
-    return () => gsap.ticker.remove(tick)
-  }, [setFrameloop])
+    return onFrame(tick)
+  }, [setFrameloop, invalidate, get])
   return null
 }
 
