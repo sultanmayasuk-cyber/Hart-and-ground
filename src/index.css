@@ -127,8 +127,8 @@
     translate: 0 calc((0.5 - (var(--m) - var(--a)) / (var(--b) - var(--a))) * 2.2rem); }
   .menu-step.high { top: 15svh; }
   .menu-step.door { top: 50%; transform: translateY(-50%); }
-  /* a phone: the cups stand at the foot of the screen; the words sit in the middle of the room above them, title and button only */
-  @media (max-width: 767px) { .menu-step.high { top: 13svh; } .menu-step.door { top: 22svh; transform: none; } .menu-step.door .btn-gold { margin-top: 1.8rem; } }
+  /* a phone: the cups stand up under the words, which sit in the room above them: title and button only */
+  @media (max-width: 767px) { .menu-step.high { top: 16svh; } .menu-step.door { top: 24svh; transform: none; } .menu-step.door .btn-gold { margin-top: 1.8rem; } }
   /* the door to the full menu: a solid gold button, plum lettering, that grows a little in the hand */
   .btn-gold { display: inline-flex; align-items: center; gap: 0.7em; margin-top: 2.2rem; padding: 1.05rem 2.3rem 1rem; border-radius: 999px; background: var(--gold); color: var(--plum);
     font-size: 0.92rem; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6);

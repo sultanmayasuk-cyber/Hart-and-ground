@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 // act: which mark the cups are at: 0 waiting below (during the dive), 1 centre stage (coffee in front), 2 traded (matcha
 // in front), 3 parted to either edge round the door to the menu, 4 gone below the counter.
 export const page = { dive: 0, act: 0 }
+;(window as unknown as { __page?: typeof page }).__page = page // (read by the ?fps readout)
 
 export function useScrollDriver() {
   useEffect(() => {

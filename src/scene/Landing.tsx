@@ -32,7 +32,7 @@ const smooth = (x: number) => x * x * (3 - 2 * x)
 const lerp = (a: number, b: number, w: number) => a + (b - a) * w
 
 // viewport-derived layout, recomputed every frame. ready: textures uploaded and shaders compiled (see Warmup)
-const stage = { size: 1.6, vw: 5, portrait: 0, act: 0, ready: false, frames: 0, loop: '' }
+const stage = { size: 1.6, vw: 5, portrait: 0, act: 0, ready: false, frames: 0, loop: '', pumps: 0, want: '' }
 function Layout() {
   useFrame((state, dt) => {
     const vw = (VIEW_H * state.size.width) / state.size.height
@@ -40,7 +40,7 @@ function Layout() {
     const portrait = clamp01((1 - state.size.width / state.size.height) / 0.45)
     stage.vw = vw
     stage.portrait = portrait
-    stage.size = Math.min(VIEW_H * lerp(0.54, 0.34, portrait), vw * lerp(0.42, 0.6, portrait)) // (a phone's cups are sized to its width)
+    stage.size = Math.min(VIEW_H * lerp(0.54, 0.44, portrait), vw * lerp(0.42, 0.84, portrait)) // (a phone's cups are big: the pair is the whole picture)
     stage.act = SNAP ? page.act : damp(stage.act, page.act, 6, Math.min(dt, 1 / 30))
     stage.frames++
     stage.loop = state.frameloop
@@ -105,14 +105,15 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     const { size: S, vw, portrait: P, act } = stage
 
     // the marks. Front cup faces the reader; the one behind stands a step back and turned away a little
-    const floor = FLOOR - VIEW_H * 0.03 * P // on a phone the counter sits a little lower, under the copy
+    const floor = FLOOR + VIEW_H * 0.02 * P // on a phone the counter sits a little higher: the cups stand up under the words
     const front = (x: number): Mark => ({ x, y: floor, z: 0.3, s: S * 1.1, yaw: 0 })
     const behind = (x: number): Mark => ({ x, y: floor, z: -1.6, s: S * 0.95, yaw: coffee ? 0.55 : -0.55 })
     // centre stage: the front cup a little left of the middle, the other a step back to the right
-    const drinks1 = coffee ? front(lerp(-vw * 0.07, 0, P)) : behind(lerp(vw * 0.16, vw * 0.3, P))
+    // (on a phone the pair is centred as a group: the front cup left of the middle, the one behind up to the right)
+    const drinks1 = coffee ? front(lerp(-vw * 0.07, -vw * 0.13, P)) : behind(lerp(vw * 0.16, vw * 0.24, P))
     // waiting: under the page, so they come up into the menu stage as it arrives
     const hero: Mark = { ...drinks1, y: floor - VIEW_H * 1.3 }
-    const drinks2 = coffee ? behind(lerp(-vw * 0.16, -vw * 0.3, P)) : front(lerp(vw * 0.07, 0, P))
+    const drinks2 = coffee ? behind(lerp(-vw * 0.16, -vw * 0.24, P)) : front(lerp(vw * 0.07, vw * 0.13, P))
     let m = mix(hero, drinks1, smooth(clamp01(act)))
     m = mix(m, drinks2, smooth(clamp01(act - 1)))
     // trading places they go round each other, never through: the one coming forward swings out toward the camera,
@@ -126,10 +127,10 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     // (a phone has no room either side of the door: there they step down to the foot of the screen, side by side, and
     // the door stands above them)
     const parted: Mark = {
-      x: (coffee ? -1 : 1) * lerp(Math.min(vw * 0.37, VIEW_H * 0.56), vw * 0.27, P),
-      y: floor + VIEW_H * 0.07 * P, // (raised on a phone: they stand right under the words, big, not off at the foot)
+      x: (coffee ? -1 : 1) * lerp(Math.min(vw * 0.37, VIEW_H * 0.56), vw * 0.3, P),
+      y: floor,
       z: lerp(0.45, 0, P),
-      s: S * lerp(1.05, 1.18, P),
+      s: S * lerp(1.05, 0.8, P), // (smaller on a phone, so two fit side by side under the words)
       yaw: (coffee ? 0.32 : -0.32) * (1 - P * 0.4),
     }
     m = mix(m, parted, smooth(clamp01(act - 2)))
@@ -263,6 +264,8 @@ function Pump() {
       // re-applied whenever the canvas resizes (a phone's toolbar sliding), which silently put it back to 'never'; and
       // 'always' doesn't restart a loop that has already stopped, so it gets one kick (found on iOS, 2026-09-23)
       const loop = want ? 'always' : 'never'
+      stage.pumps++
+      stage.want = `${loop}/${get().frameloop}/${String(get().internal?.active)}`
       if (get().frameloop !== loop) {
         setFrameloop(loop) // (every frame while they're on screen, none otherwise)
         if (want) invalidate()
