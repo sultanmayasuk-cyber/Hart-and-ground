@@ -40,7 +40,7 @@ function Layout() {
     const portrait = clamp01((1 - state.size.width / state.size.height) / 0.45)
     stage.vw = vw
     stage.portrait = portrait
-    stage.size = Math.min(VIEW_H * lerp(0.54, 0.3, portrait), vw * 0.42)
+    stage.size = Math.min(VIEW_H * lerp(0.54, 0.34, portrait), vw * lerp(0.42, 0.6, portrait)) // (a phone's cups are sized to its width)
     stage.act = SNAP ? page.act : damp(stage.act, page.act, 6, Math.min(dt, 1 / 30))
   })
   return null
@@ -103,7 +103,7 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     const { size: S, vw, portrait: P, act } = stage
 
     // the marks. Front cup faces the reader; the one behind stands a step back and turned away a little
-    const floor = FLOOR - VIEW_H * 0.14 * P // on a phone the counter sits lower, under the copy
+    const floor = FLOOR - VIEW_H * 0.03 * P // on a phone the counter sits a little lower, under the copy
     const front = (x: number): Mark => ({ x, y: floor, z: 0.3, s: S * 1.1, yaw: 0 })
     const behind = (x: number): Mark => ({ x, y: floor, z: -1.6, s: S * 0.95, yaw: coffee ? 0.55 : -0.55 })
     // centre stage: the front cup a little left of the middle, the other a step back to the right
@@ -121,7 +121,15 @@ function Cup({ which }: { which: 'hot' | 'matcha' }) {
     m.y += (coffee ? 0 : 1) * 0.05 * S * round // and the one in front lifts a little as it comes by
     // 3 · parted: each to its own edge, the same size, turned a little toward the door between them
     // (on a wide screen they don't go all the way to the edges: the door between them is only so wide)
-    const parted: Mark = { x: (coffee ? -1 : 1) * Math.min(lerp(vw * 0.37, vw * 0.3, P), VIEW_H * 0.56), y: floor, z: 0.45, s: S * 1.05, yaw: coffee ? 0.32 : -0.32 }
+    // (a phone has no room either side of the door: there they step down to the foot of the screen, side by side, and
+    // the door stands above them)
+    const parted: Mark = {
+      x: (coffee ? -1 : 1) * lerp(Math.min(vw * 0.37, VIEW_H * 0.56), vw * 0.26, P),
+      y: floor - VIEW_H * 0.1 * P,
+      z: lerp(0.45, 0, P),
+      s: S * lerp(1.05, 0.95, P),
+      yaw: (coffee ? 0.32 : -0.32) * (1 - P * 0.4),
+    }
     m = mix(m, parted, smooth(clamp01(act - 2)))
     // 4 · gone, under the page, as the story arrives
     const gone: Mark = { ...parted, y: FLOOR - VIEW_H * 1.8, s: S * 0.9 }

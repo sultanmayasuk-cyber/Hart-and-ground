@@ -99,8 +99,7 @@
 
   /* no 3D (old device, or motion turned down): the hero is a photograph, and nothing depends on the dive */
   .menu-still { display: none; }
-  .no-cups .menu-still { display: block; aspect-ratio: 1100 / 1210; width: min(74vw, 22rem); margin: 0 auto 2svh; }
-  .no-cups .menu-sec .sticky .menu-still { position: absolute; left: 50%; bottom: 6svh; margin: 0; translate: -50% 0; width: min(38svh, 40vw); }
+  .no-cups .menu-sec .sticky .menu-still { display: block; position: absolute; left: 50%; bottom: 6svh; margin: 0; translate: -50% 0; width: min(38svh, 40vw, 74vw); aspect-ratio: 1100 / 1210; }
   .no-dive .menu-sec { margin-top: 0; border-radius: 0; }
   .no-dive .hero-copy { opacity: 1; translate: none; }
 
@@ -128,6 +127,7 @@
     translate: 0 calc((0.5 - (var(--m) - var(--a)) / (var(--b) - var(--a))) * 2.2rem); }
   .menu-step.high { top: 15svh; }
   .menu-step.door { top: 50%; transform: translateY(-50%); }
+  @media (max-width: 767px) { .menu-step.high { top: 13svh; } .menu-step.door { top: 11svh; transform: none; } } /* (the cups stand at the foot of a phone's screen) */
   /* the door to the full menu: a solid gold button, plum lettering, that grows a little in the hand */
   .btn-gold { display: inline-flex; align-items: center; gap: 0.7em; margin-top: 2.2rem; padding: 1.05rem 2.3rem 1rem; border-radius: 999px; background: var(--gold); color: var(--plum);
     font-size: 0.92rem; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6);

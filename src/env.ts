@@ -11,7 +11,7 @@ export const WEBGL = (() => {
   }
 })()
 export const LIVE3D = WEBGL && !REDUCED
-// On a phone held upright there's no room beside the menu for the two live cups (and a second 3D scene is a lot to ask
-// of a phone): the menu shows a photograph of them instead. The dive stays live.
+// PHONE: held upright, narrow. Nearly everyone comes on a phone, so the menu's live cups are there too (2026-09-23),
+// laid out for the narrow screen in Landing.tsx; only a device with no 3D at all gets the photograph.
 export const PHONE = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 767px)').matches
-export const LIVE_CUPS = LIVE3D && !PHONE
+export const LIVE_CUPS = LIVE3D
