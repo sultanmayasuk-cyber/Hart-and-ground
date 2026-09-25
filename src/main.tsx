@@ -8,9 +8,9 @@ import '@fontsource/crimson-pro/latin-400-italic.css'
 import '@fontsource/crimson-pro/latin-600.css'
 import './index.css'
 
-// Launched 2026-09: the full site is what everyone gets. The coming-soon page is kept; VITE_COMING_SOON=true brings it
-// back (in .env.local, or as an environment variable on the host) if the site ever needs to go dark for a while.
-const COMING_SOON = import.meta.env.VITE_COMING_SOON === 'true'
+// Back to the coming-soon page (2026-09-25). The full site is kept: VITE_COMING_SOON=false brings it back (in .env.local,
+// or as an environment variable on the host).
+const COMING_SOON = import.meta.env.VITE_COMING_SOON !== 'false'
 const Page = lazy(() => (COMING_SOON ? import('./ComingSoon') : import('./App')))
 
 createRoot(document.getElementById('root')!).render(
