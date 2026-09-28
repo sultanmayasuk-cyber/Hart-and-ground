@@ -11,7 +11,6 @@ import {
   DynamicDrawUsage,
   InstancedMesh,
   Mesh,
-  MeshPhysicalMaterial,
   Object3D,
   PerspectiveCamera,
   ShaderMaterial,
@@ -22,9 +21,9 @@ import {
   type MeshBasicMaterial,
   type MeshStandardMaterial,
 } from 'three'
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
+import { HEAP, heapRotation, inCup, useIce } from './ice'
 import { PHONE } from '../env'
 import { QUOTES } from '../quotes'
 import { DRACO } from './cups'
@@ -367,8 +366,7 @@ function Drink() {
   )
 }
 
-// Ice floating near the top: rounded, a little melted out of true, clear (it refracts the drink behind it) with a
-// cloudy core like real cubes from a tray.
+// Ice floating near the top of the drink (the material: ice.tsx). x, y, z, size.
 const CUBES_ALL: [number, number, number, number][] = [
   [-1.6, -0.7, -1.3, 1.2],
   [1.5, -0.5, -2.1, 1.1],
@@ -382,86 +380,9 @@ const CUBES_ALL: [number, number, number, number][] = [
   [-0.4, -0.45, 1.6, 0.9],
 ]
 const CUBES = PHONE ? CUBES_ALL.slice(0, 5) : CUBES_ALL // (a phone blends every see-through layer the hard way: fewer of them)
-function useIce() {
-  const geo = useMemo(() => {
-    const g = new RoundedBoxGeometry(1, 1, 1, 8, 0.24)
-    const pos = g.attributes.position
-    const n = new Vector3()
-    for (let i = 0; i < pos.count; i++) {
-      n.fromBufferAttribute(pos, i)
-      const w = Math.sin(n.x * 7.1 + n.y * 3.3) * Math.sin(n.z * 5.7 - n.y * 4.1) * 0.09 + Math.sin(n.x * 2.3 - n.z * 3.1) * 0.07 + Math.sin(n.y * 9.0 + n.x * 5.0) * 0.025 - n.y * 0.07 // melted out of true, rounder underneath
-      n.multiplyScalar(1 + w)
-      pos.setXYZ(i, n.x, n.y, n.z)
-    }
-    g.computeVertexNormals()
-    return g
-  }, [])
-  const mat = useMemo(
-    () =>
-      (() => {
-        // on a phone: no refraction (it costs a second render of the whole scene every frame); clear glass with
-        // reflections and bright edges reads as ice at that size
-        const m = new MeshPhysicalMaterial({
-          ...(PHONE ? { transparent: true, opacity: 0.24, depthWrite: false } : {}),
-          transmission: PHONE ? 0 : 1,
-          thickness: 1.6,
-          roughness: 0.0,
-          clearcoat: PHONE ? 0 : 1,
-          ior: 1.31,
-          color: '#ffffff',
-          attenuationColor: new Color('#fbf6ef'),
-          attenuationDistance: 24,
-          specularIntensity: 1,
-          envMapIntensity: 2.6,
-        })
-        // bright edges: the faces seen side-on catch the light from the surface overhead
-        m.onBeforeCompile = (shader) => {
-          shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <opaque_fragment>',
-            `float iceRim = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 3.0);
-outgoingLight += vec3(1.0, 0.98, 0.94) * iceRim * 0.5;
-#include <opaque_fragment>`,
-          )
-        }
-        return m
-      })(),
-    [],
-  )
-  const core = useMemo(
-    () =>
-      new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: AdditiveBlending,
-        uniforms: { uColor: { value: new Color('#fff6ea') } },
-        vertexShader: /* glsl */ `
-          varying vec3 vN; varying vec3 vV; varying vec3 vP;
-          void main() { vec4 w = modelMatrix * vec4(position, 1.0); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); vP = position; gl_Position = projectionMatrix * viewMatrix * w; }`,
-        fragmentShader: /* glsl */ `
-          uniform vec3 uColor; varying vec3 vN; varying vec3 vV; varying vec3 vP;
-          ${NOISE}
-          void main() {
-            float face = abs(dot(normalize(vN), normalize(vV)));
-            float a = pow(face, 2.0) * smoothstep(0.3, 0.75, fbm(vP * 3.5)) * 0.5; // thickest where you look through the middle
-            gl_FragColor = vec4(uColor * a, a);
-            #include <colorspace_fragment>
-          }`,
-      }),
-    [],
-  )
-  useEffect(
-    () => () => {
-      geo.dispose()
-      mat.dispose()
-      core.dispose()
-    },
-    [geo, mat, core],
-  )
-  return { geo, mat, core }
-}
-
 function Ice() {
-  const { geo, mat, core } = useIce()
+  // in the drink it shows the drink all round it (lit crema above, espresso below), not the studio
+  const { geos, mat } = useIce({ refract: !PHONE, thickness: 1.6, studio: false, tint: '#fbf6ef', surround: ['#f0cf9f', '#8a5128'] })
   const group = useRef<Group>(null)
   useFrame((st) => {
     const t = st.clock.elapsedTime
@@ -475,41 +396,26 @@ function Ice() {
     <group ref={group}>
       {CUBES.map(([, , , s], i) => (
         <group key={i} scale={[s, s * 0.92, s * 1.04]}>
-          <mesh geometry={geo} material={mat} />
-          {!PHONE && <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />}
+          <mesh geometry={geos[i % 3]} material={mat} />
         </group>
       ))}
     </group>
   )
 }
 
-// The ice you see from outside: real clear cubes heaped on the drink (they cover the model's own baked ice, which
-// doesn't hold up close). On arrival they drop in one after another. x, y, z in cup units (rim at 0.93), size, tilt.
-const HEAP_ALL: [number, number, number, number, number][] = [
-  [0.01, 0.875, 0.02, 0.16, 0.3], [-0.16, 0.868, 0.1, 0.15, 1.1], [0.15, 0.87, 0.12, 0.15, 2.0], [0.1, 0.868, -0.16, 0.155, 0.7],
-  [-0.13, 0.866, -0.15, 0.15, 2.6], [-0.02, 0.925, -0.03, 0.13, 1.6], [0.22, 0.87, -0.04, 0.12, 3.0], [-0.23, 0.868, -0.04, 0.12, 0.2],
-  [0.0, 0.862, 0.25, 0.11, 0.9], [0.25, 0.862, 0.16, 0.1, 1.9], [-0.26, 0.862, 0.15, 0.1, 2.4], [0.2, 0.862, -0.22, 0.1, 0.5],
-  [-0.22, 0.862, -0.22, 0.1, 1.4], [0.0, 0.862, -0.27, 0.11, 2.9], [0.09, 0.93, 0.13, 0.11, 0.1], [-0.1, 0.928, -0.12, 0.11, 2.2],
-]
-const HEAP = PHONE ? HEAP_ALL.slice(0, 8) : HEAP_ALL
+// The ice you see from outside: real clear cubes heaped on the drink (HEAP, ice.tsx). On arrival they drop in one
+// after another.
 function Heap() {
-  const { geo, mat: heavy, core } = useIce()
-  // thinner than the ice inside: the camera ends up right among these, where heavy refraction smears into stripes
-  const mat = useMemo(() => {
-    const m = heavy.clone()
-    m.onBeforeCompile = heavy.onBeforeCompile
-    m.thickness = 0.35
-    if (PHONE) m.opacity = 0.5
-    return m
-  }, [heavy])
-  useEffect(() => () => mat.dispose(), [mat])
+  // thin: the camera ends up right among these, where heavy refraction smears into stripes
+  const { geos, mat } = useIce({ refract: !PHONE, thickness: 0.35, under: '#4a2c17' })
   const group = useRef<Group>(null)
   const drops = useRef(HEAP.map(() => ({ y: 1.6, v: 0 })))
   useFrame((st, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30)
     const age = st.clock.elapsedTime - state.born
     group.current?.children.forEach((c, i) => {
-      const [x, y, z, , tilt] = HEAP[i]
+      const [hx, y, hz, s, tilt] = HEAP[i]
+      const [x, z] = inCup(hx, hz, s)
       const d = drops.current[i]
       if (STILL) d.y = 0
       else if (state.ready && age > 0.55 + i * 0.07) {
@@ -518,16 +424,13 @@ function Heap() {
       }
       c.visible = state.ready && (STILL || age > 0.55 + i * 0.07)
       c.position.set(x, y + d.y, z)
-      c.rotation.set(tilt * 0.5 + d.y * 1.5, tilt, tilt * 0.3 - d.y)
+      c.rotation.set(...heapRotation(tilt, d.y))
     })
   })
   return (
     <group ref={group}>
       {HEAP.map(([, , , s], i) => (
-        <group key={i} scale={s}>
-          <mesh geometry={geo} material={mat} />
-          {!PHONE && <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />}
-        </group>
+        <mesh key={i} geometry={geos[i % 3]} material={mat} scale={s} />
       ))}
     </group>
   )
@@ -541,26 +444,7 @@ const ADRIFT_ALL: [number, number, number, number][] = [
 ]
 const ADRIFT = PHONE ? ADRIFT_ALL.slice(0, 5) : ADRIFT_ALL
 function Adrift() {
-  const { geo, mat: heavy, core } = useIce()
-  const mat = useMemo(() => {
-    const m = heavy.clone()
-    // against the pale wall, clear ice shows by its edges going darker, not brighter
-    m.onBeforeCompile = (shader) => {
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <opaque_fragment>',
-        `float iceEdge = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 2.0);
-outgoingLight = outgoingLight * mix(1.0, 0.6, iceEdge) + totalSpecular * 1.5;
-#include <opaque_fragment>`,
-      )
-    }
-    m.customProgramCacheKey = () => 'ice-adrift'
-    m.thickness = 0.25
-    if (PHONE) m.opacity = 0.85
-    m.envMapIntensity = 1.6
-    m.attenuationColor = new Color('#ffffff')
-    return m
-  }, [heavy])
-  useEffect(() => () => mat.dispose(), [mat])
+  const { geos, mat } = useIce({ refract: !PHONE, thickness: 0.3 })
   const group = useRef<Group>(null)
   useFrame((st) => {
     const t = st.clock.elapsedTime
@@ -583,10 +467,7 @@ outgoingLight = outgoingLight * mix(1.0, 0.6, iceEdge) + totalSpecular * 1.5;
   return (
     <group ref={group}>
       {ADRIFT.map((_, i) => (
-        <group key={i}>
-          <mesh geometry={geo} material={mat} />
-          {!PHONE && <mesh geometry={geo} material={core} scale={0.62} renderOrder={2} />}
-        </group>
+        <mesh key={i} geometry={geos[i % 3]} material={mat} />
       ))}
     </group>
   )

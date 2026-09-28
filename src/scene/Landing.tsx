@@ -10,6 +10,8 @@ import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { page, VIEW_H } from './scroll'
 import PaperCup from './PaperCup'
+import IceHeap from './IceHeap'
+import Straw from './Straw'
 
 useGLTF.preload('/models/matcha.glb', DRACO)
 
@@ -86,6 +88,8 @@ function Matcha() {
     <>
       <primitive object={scene} />
       <CupPrint />
+      <IceHeap grow={1.12} under="#557f2c" />
+      <Straw />
     </>
   )
 }

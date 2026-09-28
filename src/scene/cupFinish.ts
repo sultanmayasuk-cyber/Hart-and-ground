@@ -1,8 +1,8 @@
 import { Color, type MeshStandardMaterial } from 'three'
 
 // Finishing touches on the Meshy cups' own baked material. Unit cup: base at y = 0, rim at about y = 0.93, radius 0.38.
-// - ice (above the liquid line, inside the rim): crisp flat facets from the model's own lumps; looking straight into a
-//   facet you see through to the drink, toward the edges bright cool reflection; the gaps low between cubes sit darker
+// - the models' own baked ice (above the liquid line, inside the rim) is painted as the drink between the cubes: the real
+//   cubes are heaped over it (HEAP, ice.tsx), and the baked lumps read as jelly next to them
 // - condensation: glossy droplets beaded down the wall, two sizes, from 3D cells so there are no seams
 // - the clear plastic lip gets a crisp highlight
 const TINT = { coffee: '#5a3a22', matcha: '#4f7d2a' }
@@ -59,28 +59,23 @@ diffuseColor.rgb *= 1.0 - 0.05 * cupDrop;`,
       .replace(
         '#include <roughnessmap_fragment>',
         `#include <roughnessmap_fragment>
-roughnessFactor = mix(roughnessFactor, 0.05, iceZone());
+roughnessFactor = mix(roughnessFactor, 0.2, iceZone());
 roughnessFactor = mix(roughnessFactor, 0.06, max(cupDrop, rimZone()));`,
       )
       .replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
-vec3 iceFlat = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
-normal = normalize(mix(normal, iceFlat, 0.75 * iceZone()));
 normal = cupBump(-vViewPosition, normal, cupDropH * 1.5);`,
       )
       .replace(
         '#include <opaque_fragment>',
         `float iz = iceZone();
 if (iz > 0.0) {
-  vec3 iceV = normalize(vViewPosition);
-  float facing = clamp(dot(normal, iceV), 0.0, 1.0);
-  float fres = pow(1.0 - facing, 3.0);
+  // the drink showing between the cubes: its own colour, lit a little, wet, darker down in the gaps
   float lum = dot(totalDiffuse, vec3(0.299, 0.587, 0.114));
-  vec3 through = uIceTint * (0.3 + 0.7 * lum) * facing;
-  vec3 ice = through + vec3(0.9, 0.95, 1.0) * fres * 0.85 + totalSpecular * 2.2 + totalDiffuse * 0.2;
-  ice *= mix(1.0, 0.55, 1.0 - smoothstep(0.9, 0.95, vCupPos.y)); // the gaps down between cubes, in the drink
-  outgoingLight = mix(outgoingLight, ice, iz);
+  vec3 drink = uIceTint * (0.55 + 0.6 * lum) + totalSpecular * 0.6;
+  drink *= mix(1.0, 0.6, 1.0 - smoothstep(0.88, 0.94, vCupPos.y));
+  outgoingLight = mix(outgoingLight, drink, iz);
 }
 outgoingLight += totalSpecular * (1.5 * rimZone() + 0.6 * cupDrop); // the lip and the droplets catch the light
 #include <opaque_fragment>`,
