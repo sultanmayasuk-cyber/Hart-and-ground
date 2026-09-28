@@ -165,17 +165,17 @@ export default function App() {
         </Suspense>
       )}
 
-      <header className="hdr fixed inset-x-0 top-0 z-20 grid grid-cols-[auto_1fr] items-center gap-4 px-5 py-4 sm:grid-cols-[1fr_auto_1fr] md:px-10 md:py-5">
+      <header className="hdr fixed inset-x-0 top-0 z-20 grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-4 sm:grid-cols-[1fr_auto_1fr] md:px-10 md:py-5">
         <a href="#dive" className="justify-self-start" aria-label="Hart & Ground">
           <span className="stag block aspect-[505/470] h-8 bg-current md:h-10" aria-hidden />
         </a>
-        <nav className="nav flex justify-end gap-4 sm:justify-center md:gap-10">
+        <nav className="nav flex justify-end gap-3 sm:justify-center sm:gap-4 md:gap-10">
           <a href="#menu">Menu</a>
           <a href="#story">Story</a>
           <a href="#rewards">Rewards</a>
           <a href="#visit">Visit</a>
         </nav>
-        <a className="nav hidden justify-self-end sm:block" href={LINKS.order} target="_blank" rel="noreferrer">Order</a>
+        <a className="nav block justify-self-end" href={LINKS.order} target="_blank" rel="noreferrer">Order</a>
       </header>
 
       <main>
@@ -186,7 +186,7 @@ export default function App() {
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">
               <h1 className="display">
                 <span className="hero-l"><span className="line"><span>A little</span></span><span className="line"><span>escape</span></span></span>
-                <span className="hero-r"><span className="line"><span>in</span></span><span className="line"><span>Richmond.</span></span></span>
+                <span className="hero-r"><span className="line"><span>in Richmond.</span></span></span>
               </h1>
               <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
             </div>
