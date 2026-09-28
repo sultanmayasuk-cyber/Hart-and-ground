@@ -65,8 +65,7 @@ vec3 iceBump(vec3 pos, vec3 n, float h) {
 type Opts = { refract: boolean; thickness?: number; studio?: boolean; tint?: string; surround?: [string, string]; under?: string }
 
 function makeMaterial({ refract, thickness = 0.35, studio: ownRoom = true, tint = '#ffffff', surround, under }: Opts, room: CanvasTexture | null) {
-  const steps = PHONE ? 4 : 7
-  const bubbles = PHONE ? 7 : 14
+  const bubbles = PHONE ? 6 : 10
   const m = new MeshPhysicalMaterial({
     color: refract ? '#ffffff' : '#000000', // (layer: nothing diffuse, it's all reflection and what comes through)
     roughness: 0.03,
@@ -122,7 +121,7 @@ roughnessFactor = mix(0.02, 0.22, iceFrost);`,
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
 // melt: soft ripples over the faces, so highlights break up the way they do on real ice
-float iceMelt = iceNoise(vIceP * 7.0 + vIceSeed * 5.0) * 0.7 + iceNoise(vIceP * 19.0 - vIceSeed) * 0.3;
+float iceMelt = iceNoise(vIceP * 8.0 + vIceSeed * 5.0);
 normal = iceBump(-vViewPosition, normal, iceMelt * 0.012 * vIceScale);`,
       )
       .replace(
@@ -136,16 +135,13 @@ normal = iceBump(-vViewPosition, normal, iceMelt * 0.012 * vIceScale);`,
   if (dot(ri, ri) < 0.01) ri = rd;
   ri = normalize(ri + 1e-4);
   float tx = max(iceBoxExit(vIceP, ri, vec3(0.5)), 0.0);
-  // the frosty core, and the feathers running from it toward the corners
-  float core = 0.0;
-  for (int i = 0; i < ${steps}; i++) {
-    vec3 q = vIceP + ri * ((float(i) + 0.5) / ${steps}.0 * tx);
-    float d = iceSdBox(q, vec3(0.08, 0.11, 0.08)) + (iceNoise(q * 6.0 + vIceSeed * 13.0) - 0.5) * 0.16;
-    float fea = smoothstep(0.64, 0.9, iceNoise(normalize(q + 1e-3) * 7.0 + vIceSeed * 5.0)) * smoothstep(0.34, 0.06, length(q));
-    core += smoothstep(0.08, -0.04, d) + fea * 0.55;
-  }
-  core = clamp(core * tx / ${steps}.0 * 2.6, 0.0, 1.0) * 0.4;
-  // cracks: flat breaks across the cube, bright when you look along them
+  // the frosty core, and the feathers running from it toward the corners: looked up once, where the ray passes
+  // nearest the middle (it was marched through in steps; the look is the same at a fraction of the cost)
+  vec3 q0 = vIceP + ri * clamp(-dot(vIceP, ri), 0.0, tx);
+  float cd = iceSdBox(q0, vec3(0.08, 0.11, 0.08)) + (iceNoise(q0 * 6.0 + vIceSeed * 13.0) - 0.5) * 0.16;
+  float fea = smoothstep(0.64, 0.9, iceNoise(normalize(q0 + 1e-3) * 7.0 + vIceSeed * 5.0)) * smoothstep(0.34, 0.06, length(q0));
+  float core = clamp(smoothstep(0.1, -0.05, cd) * 0.85 + fea * 0.45, 0.0, 1.0) * 0.4 * smoothstep(0.0, 0.4, tx);
+  // cracks: flat breaks across the cube, bright when you look along them (ragged edge and streaks from sines: no noise)
   float crack = 0.0;
   for (int i = 0; i < 2; i++) {
     vec3 h = iceHash3(vIceSeed * 7.0 + float(i) * 3.1);
@@ -157,8 +153,9 @@ normal = iceBump(-vViewPosition, normal, iceMelt * 0.012 * vIceScale);`,
     float t = dot(c - vIceP, n) / (abs(dn) < 1e-4 ? 1e-4 : dn);
     if (t > 0.0 && t < tx) {
       vec3 q = vIceP + ri * t;
-      float m = smoothstep(0.2 + h2.x * 0.12, 0.08, length(q - c) + (iceNoise(q * 12.0 + float(i) * 9.0) - 0.5) * 0.2);
-      float lines = 0.4 + 0.6 * iceNoise(q * vec3(36.0, 6.0, 36.0) + h * 10.0);
+      float rag = sin(q.x * 23.0 + q.y * 7.0) * sin(q.z * 19.0 - q.y * 11.0) * 0.06;
+      float m = smoothstep(0.2 + h2.x * 0.12, 0.08, length(q - c) + rag);
+      float lines = 0.55 + 0.45 * sin(dot(q, h * 70.0));
       crack += m * lines * (0.2 + 0.8 * pow(1.0 - abs(dn), 3.0));
     }
   }
@@ -191,7 +188,7 @@ normal = iceBump(-vViewPosition, normal, iceMelt * 0.012 * vIceScale);`,
     p += d * max(iceBoxExit(p, d, vec3(0.5)), 0.0);
     vec3 a = abs(p);
     vec3 fn = a.x > a.y && a.x > a.z ? vec3(sign(p.x), 0.0, 0.0) : a.y > a.z ? vec3(0.0, sign(p.y), 0.0) : vec3(0.0, 0.0, sign(p.z));
-    fn = normalize(fn + (vec3(iceNoise(p * 4.0 + vIceSeed), iceNoise(p * 4.0 + 3.1), iceNoise(p * 4.0 + 7.7)) - 0.5) * 0.3); // melted faces aren't flat
+    fn = normalize(fn + sin(p.yzx * 9.0 + vIceSeed * vec3(1.3, 2.1, 3.7)) * 0.13); // melted faces aren't flat
     vec3 o = refract(d, -fn, 1.31);
     dOut = d;
     if (dot(o, o) > 0.01) { dOut = o; break; }
@@ -232,7 +229,7 @@ normal = iceBump(-vViewPosition, normal, iceMelt * 0.012 * vIceScale);`,
 #include <opaque_fragment>`,
       )
   }
-  m.customProgramCacheKey = () => `ice-${refract ? 'r' : 'l'}-${steps}-${surround ? 's' : ''}${under ? 'u' : ''}${studioRoom ? 't' : ''}`
+  m.customProgramCacheKey = () => `ice-${refract ? 'r' : 'l'}-${surround ? 's' : ''}${under ? 'u' : ''}${studioRoom ? 't' : ''}`
   return m
 }
 

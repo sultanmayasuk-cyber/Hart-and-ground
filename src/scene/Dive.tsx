@@ -403,18 +403,20 @@ function Ice() {
   )
 }
 
+// (phones: the camera ends up right among these, each a see-through layer over the next: fewer of them)
+const CUBES_HEAP = PHONE ? HEAP.slice(0, 8) : HEAP
 // The ice you see from outside: real clear cubes heaped on the drink (HEAP, ice.tsx). On arrival they drop in one
 // after another.
 function Heap() {
   // thin: the camera ends up right among these, where heavy refraction smears into stripes
   const { geos, mat } = useIce({ refract: !PHONE, thickness: 0.35, under: '#4a2c17' })
   const group = useRef<Group>(null)
-  const drops = useRef(HEAP.map(() => ({ y: 1.6, v: 0 })))
+  const drops = useRef(CUBES_HEAP.map(() => ({ y: 1.6, v: 0 })))
   useFrame((st, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30)
     const age = st.clock.elapsedTime - state.born
     group.current?.children.forEach((c, i) => {
-      const [hx, y, hz, s, tilt] = HEAP[i]
+      const [hx, y, hz, s, tilt] = CUBES_HEAP[i]
       const [x, z] = inCup(hx, hz, s)
       const d = drops.current[i]
       if (STILL) d.y = 0
@@ -429,7 +431,7 @@ function Heap() {
   })
   return (
     <group ref={group}>
-      {HEAP.map(([, , , s], i) => (
+      {CUBES_HEAP.map(([, , , s], i) => (
         <mesh key={i} geometry={geos[i % 3]} material={mat} scale={s} />
       ))}
     </group>
