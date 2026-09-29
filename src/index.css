@@ -105,12 +105,16 @@
 
   /* the hero's words: they stand with the cup, and leave as soon as the camera starts to move */
   .hero-copy { opacity: clamp(0, 1 - var(--dive) * 16, 1); translate: 0 calc(var(--dive) * -40svh); }
-  .hero-copy h1 { font-size: clamp(2.6rem, 5.6vw, 7rem); line-height: 0.98; }
-  .hero-l, .hero-r { position: absolute; display: block; }
-  .hero-l { left: clamp(1.5rem, 5vw, 6rem); top: 24svh; }
-  .hero-r { right: clamp(1.5rem, 5vw, 6rem); bottom: 15svh; text-align: right; }
+  .hero-h { position: absolute; inset-inline: 0; top: 11svh; margin: 0; padding-inline: 4vw; text-align: center; white-space: nowrap;
+    font-family: "Crimson Pro", Georgia, serif; font-weight: 400; font-size: 8.4vw; line-height: 1; letter-spacing: -0.035em; }
+  .hero-h .line { display: inline-block; vertical-align: top; padding-inline: 0.06em; margin-inline: -0.06em; } /* (room for the italic's overhang) */
+  .hero-h em { font-style: italic; letter-spacing: -0.02em; }
   .hero-sub { position: absolute; left: clamp(1.5rem, 5vw, 6rem); bottom: 9svh; max-width: 19rem; opacity: 0.8; }
-  @media (max-width: 767px) { .hero-l { top: 11svh; } .hero-copy { bottom: auto; height: 100svh; } .hero-r { bottom: 5svh; } .hero-sub { display: none; } }
+  @media (max-width: 767px) {
+    .hero-copy { bottom: auto; height: 100svh; }
+    .hero-h { top: 10svh; white-space: normal; text-wrap: balance; font-size: 15vw; line-height: 0.95; padding-inline: 5vw; }
+    .hero-sub { display: none; }
+  }
 
   /* gold, used on the purple only */
   .gold { color: var(--gold); }

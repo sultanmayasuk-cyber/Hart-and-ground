@@ -146,7 +146,7 @@ export default function App() {
   useEffect(() => {
     if (!loaded || !LIVE3D) return
     const ctx = gsap.context(() => {
-      gsap.from('.hero-copy .line > span', { yPercent: 115, duration: 1.5, ease: 'power4.out', stagger: 0.12, delay: 0.25 })
+      gsap.from('.hero-copy .line > span', { yPercent: 118, duration: 1.6, ease: 'power4.out', stagger: 0.07, delay: 0.25 })
       gsap.from('.hero-sub', { opacity: 0, y: 14, duration: 1.4, ease: 'power3.out', delay: 1.1 })
     }, root)
     return () => ctx.revert()
@@ -182,11 +182,12 @@ export default function App() {
         {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
         <section id="dive" className={`dive relative ${LIVE3D ? (PHONE ? 'h-[400svh]' : 'h-[620svh]') : 'h-svh'}`}>
           <div className="sticky top-0 h-lvh overflow-hidden">
-            {/* the words stand either side of the cup, like a poster: the opening line on the left, high; where, on the right, low */}
+            {/* with the 3D on, the headline is drawn on the wall behind the cup (Backdrop in scene/Dive.tsx) and this one is
+                for readers and search; on the still it's set here */}
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">
-              <h1 className="display">
-                <span className="hero-l"><span className="line"><span>A little</span></span><span className="line"><span>escape</span></span></span>
-                <span className="hero-r"><span className="line"><span>in Richmond.</span></span></span>
+              <h1 className={LIVE3D ? 'sr-only' : 'hero-h'}>
+                <span className="line"><span>A</span></span> <span className="line"><span>little</span></span> <span className="line"><span><em>escape</em></span></span>{' '}
+                <span className="line"><span>in</span></span> <span className="line"><span>Richmond.</span></span>
               </h1>
               <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
             </div>
