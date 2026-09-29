@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 // the fonts ship with the site (no request to Google): Cinzel for display, Crimson Pro for text
 import '@fontsource/cinzel/latin-500.css'
 import '@fontsource/cinzel/latin-600.css'
+import '@fontsource/cormorant-garamond/latin-500.css'
+import '@fontsource/cormorant-garamond/latin-500-italic.css'
 import '@fontsource/crimson-pro/latin-400.css'
 import '@fontsource/crimson-pro/latin-400-italic.css'
 import '@fontsource/crimson-pro/latin-600.css'

@@ -105,16 +105,22 @@
 
   /* the hero's words: they stand with the cup, and leave as soon as the camera starts to move */
   .hero-copy { opacity: clamp(0, 1 - var(--dive) * 16, 1); translate: 0 calc(var(--dive) * -40svh); }
-  .hero-h { position: absolute; inset-inline: 0; top: 11svh; margin: 0; padding-inline: 4vw; text-align: center; white-space: nowrap;
-    font-family: "Crimson Pro", Georgia, serif; font-weight: 400; font-size: 8.4vw; line-height: 1; letter-spacing: -0.035em; }
-  .hero-h .line { display: inline-block; vertical-align: top; padding-inline: 0.06em; margin-inline: -0.06em; } /* (room for the italic's overhang) */
-  .hero-h em { font-style: italic; letter-spacing: -0.02em; }
-  .hero-sub { position: absolute; left: clamp(1.5rem, 5vw, 6rem); bottom: 9svh; max-width: 19rem; opacity: 0.8; }
-  @media (max-width: 767px) {
-    .hero-copy { bottom: auto; height: 100svh; }
-    .hero-h { top: 10svh; white-space: normal; text-wrap: balance; font-size: 15vw; line-height: 0.95; padding-inline: 5vw; }
+  .hero-block { position: absolute; }
+  .hero-h { margin: 0; font-family: "Cormorant Garamond", "Times New Roman", serif; font-weight: 500; line-height: 0.94; letter-spacing: -0.012em; }
+  .hero-h em { font-style: italic; }
+  .hero-sub { margin-top: 1.75rem; max-width: 20rem; opacity: 0.8; }
+  /* wide: a column left of the cup (Dive.tsx shifts the cup right from the same aspect, WIDE) */
+  @media (min-aspect-ratio: 11/10) {
+    .hero-block { left: clamp(1.5rem, 6vw, 7rem); top: 50%; translate: 0 -42%; }
+    .hero-h { font-size: clamp(3rem, 6.6vw, 9rem); }
+  }
+  /* upright: centred over the cup */
+  @media (max-aspect-ratio: 11/10) {
+    .hero-block { inset-inline: 0; top: 19svh; padding-inline: 5vw; text-align: center; }
+    .hero-h { font-size: min(13.5vw, 7.5svh); }
     .hero-sub { display: none; }
   }
+  @media (min-aspect-ratio: 11/10) { .no-dive .hero-h { font-size: clamp(2.6rem, 4.2vw, 6rem); } } /* (the still photograph has the cup in the middle) */
 
   /* gold, used on the purple only */
   .gold { color: var(--gold); }

@@ -17,7 +17,6 @@ import {
   SRGBColorSpace,
   Texture,
   Vector3,
-  Vector4,
   type Group,
   type MeshBasicMaterial,
   type MeshStandardMaterial,
@@ -34,7 +33,7 @@ import { page } from './scroll'
 
 useGLTF.preload('/models/coffee.glb', DRACO)
 
-// The hero: one iced latte on the cream counter, the headline on the wall behind it.
+// The hero: one iced latte on the cream counter; on a wide screen it stands right of centre, the headline to its left.
 // Scrolling (page.dive, 0..1) lifts the camera over the rim and down through the ice into the drink: past the cubes
 // near the top, through espresso clouding into milk, down to the base, where the light through the bottom of the cup
 // turns into the cream of the page below.
@@ -46,6 +45,8 @@ const S = 2 // the cup: unit model scaled to 2 units tall, base on the counter a
 const O = new Vector3(0, -60, 0) // where the inside of the drink is built (its surface; the base is 24 below)
 const DEPTH = 24
 const CUT = 0.27 // the camera jumps from outside to inside here, as the coffee covers the lens
+const WIDE = 1.1 // aspect from which the hero is laid out in two columns (index.css: min-aspect-ratio 11/10)
+const SHIFT = 0.13 // how far right of centre the cup stands there, in screen widths
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x))
 const smooth = (x: number) => x * x * (3 - 2 * x)
 const ramp = (x: number, a: number, b: number) => smooth(clamp01((x - a) / (b - a)))
@@ -58,13 +59,13 @@ const SNAP = import.meta.env.DEV && new URLSearchParams(location.search).has('sn
 if (SNAP) Object.assign(window, { __dive: state })
 
 type Key = { p: number; pos: [number, number, number]; tgt: [number, number, number]; fov: number }
-// Outside: the cup stands in the middle in front of the headline (Backdrop), ice adrift around it. One move: the camera lifts
+// Outside: the cup stands in the middle (right of it on a wide screen: SHIFT), ice adrift around it. One move: the camera lifts
 // in an arc over the cup and drops straight into it. (It used to push in until the stag on the
 // wall fills the screen, climbs the wall past the ribs, tips over the rim and drops onto the ice. The lens widens on
 // the way, so the cup grows faster than the camera moves: that's what makes it a dive and not a zoom.
 const OUTSIDE = (aspect: number): Key[] => {
-  // back far enough that the floating ice and the headline fit round the cup; on a phone held upright the cup fills
-  // the width, framed a little low so the two lines of the headline stand over it and the pair sits mid-screen
+  // back far enough that the floating ice fits round the cup; on a phone held upright the cup fills the width, framed
+  // a little low so the headline stands over it
   const z0 = aspect < 0.8 ? 10.4 : Math.max(6.4, 9.6 / aspect)
   return [
     aspect < 0.8 ? { p: 0, pos: [0, 1.7, z0], tgt: [0, 1.35, 0], fov: 30 } : { p: 0, pos: [0, 1.4, z0], tgt: [0, 1.12, 0], fov: 30 },
@@ -171,8 +172,12 @@ function Rig() {
     }
     cam.lookAt(v)
     const fov = leg.fov(p)
-    if (cam.fov !== fov) {
+    // wide screens: the picture slides so the cup stands right of centre, the headline's column to its left; it slides
+    // back to the middle as the camera sets off (a lens shift, so the cup isn't seen from the side)
+    const shift = aspect >= WIDE ? -2 * SHIFT * Math.tan((fov * Math.PI) / 360) * aspect * 35 * (1 - ramp(p, 0.004, 0.1)) : 0
+    if (cam.fov !== fov || cam.filmOffset !== shift) {
       cam.fov = fov
+      cam.filmOffset = shift
       cam.updateProjectionMatrix()
     }
   })
@@ -230,78 +235,8 @@ function Cup() {
   )
 }
 
-// The headline, set on the wall behind the cup: the cup stands in front of its baseline like the cover line of a
-// magazine, and the clear ice adrift in front of it bends the letters. One line across a wide screen, two on an upright
-// one; its baseline sits just under the rim, wherever the opening pose puts the rim for this screen. The words rise one
-// after another out of their own boxes as the loader lifts (like the page's .line reveal), and go as the camera moves.
-const WORDS: [string, boolean][] = [['A', false], ['little', false], ['escape', true], ['in', false], ['Richmond.', false]]
-const REG = '"Crimson Pro", Georgia, serif'
-let fontsIn = 0 // performance.now() when the headline's faces were ready
-if (typeof document !== 'undefined')
-  Promise.all([document.fonts.load(`400 100px ${REG}`), document.fonts.load(`italic 400 100px ${REG}`)])
-    .catch(() => {})
-    .finally(() => (fontsIn = performance.now()))
-const cam = new PerspectiveCamera()
-function headline(w: number, h: number, ratio: number) {
-  // where the rim is on screen in the opening pose (uv, 0 at the bottom)
-  const k = OUTSIDE(w / h)[0]
-  cam.fov = k.fov
-  cam.aspect = w / h
-  cam.position.set(...k.pos)
-  cam.lookAt(...k.tgt)
-  cam.updateProjectionMatrix()
-  cam.updateMatrixWorld()
-  const rim = v.set(0, S * 0.98, 0).project(cam).y * 0.5 + 0.5
-  const c = document.createElement('canvas')
-  const g = c.getContext('2d')!
-  const font = (fs: number, it: boolean) => {
-    g.font = `${it ? 'italic ' : ''}400 ${fs}px ${REG}`
-    if ('letterSpacing' in g) g.letterSpacing = `${-fs * 0.03}px` // (set tight, as big type wants)
-  }
-  const wide = w / h > 0.8
-  const rows = wide ? [WORDS] : [WORDS.slice(0, 3), WORDS.slice(3)]
-  const measure = (fs: number) =>
-    rows.map((row) => {
-      font(fs, false)
-      const gap = g.measureText(' ').width
-      const ws = row.map(([t, it]) => (font(fs, it), g.measureText(t).width))
-      return { ws, gap, width: ws.reduce((x, y) => x + y, 0) + gap * (row.length - 1) }
-    })
-  let fs = wide ? Math.min(w * 0.084, h * 0.15) : Math.min(w * 0.17, h * 0.09)
-  const fit = (wide ? 0.9 : 0.88) * w
-  fs *= Math.min(1, fit / Math.max(...measure(fs).map((r) => r.width)))
-  const m = measure(fs)
-  const lead = fs * 0.97
-  // the band the texture covers, in page px from the top
-  const base = (1 - rim) * h - fs * 0.13 // the last baseline, just over the rim: the lid and the heap hide only the descenders
-  const top = base - lead * (rows.length - 1) - fs * 0.95
-  const bot = base + fs * 0.3
-  c.width = Math.ceil(w * ratio)
-  c.height = Math.ceil((bot - top) * ratio)
-  g.scale(ratio, ratio)
-  g.fillStyle = '#fff'
-  g.textBaseline = 'alphabetic'
-  const boxes: Vector4[] = []
-  rows.forEach((row, r) => {
-    const { ws, gap, width } = m[r]
-    const y = base - top - lead * (rows.length - 1 - r)
-    let x = (w - width) / 2
-    row.forEach(([t, it], i) => {
-      font(fs, it)
-      g.fillText(t, x, y)
-      // its box in texture uv (y up): the word rises into this from below and never shows outside it
-      const bh = bot - top
-      boxes.push(new Vector4((x - fs * 0.08) / w, (x + ws[i] + fs * 0.12) / w, 1 - (y + fs * 0.3) / bh, 1 - (y - fs * 0.95) / bh))
-      x += ws[i] + gap
-    })
-  })
-  const tex = new CanvasTexture(c)
-  tex.generateMipmaps = false
-  return { tex, boxes, band: new Vector4(0, 1 - bot / h, 1, 1 - top / h) }
-}
-
-// The counter's wall: the page's cream with a warm pool of light behind the cup, and the headline. Drawn in the scene
-// (not by the page) so the clear ice has something to refract, and the cup can stand in front of the words.
+// The counter's wall: the page's cream with a warm pool of light behind the cup. Drawn in the scene (not by the page)
+// so the clear ice has something to refract.
 function Backdrop() {
   const { size } = useThree()
   const mat = useMemo(
@@ -309,60 +244,23 @@ function Backdrop() {
       new ShaderMaterial({
         depthTest: false,
         depthWrite: false,
-        uniforms: {
-          uAspect: { value: 1 }, uAt: { value: 0.72 }, uCream: { value: new Color('#f3ebe1') }, uWarm: { value: new Color('#fdf4e6') },
-          uInk: { value: new Color('#3a1730') }, uText: { value: null }, uBand: { value: new Vector4() }, uGone: { value: 0 },
-          uBox: { value: WORDS.map(() => new Vector4()) }, uRise: { value: WORDS.map(() => 0) },
-        },
+        uniforms: { uAspect: { value: 1 }, uAt: { value: 0.72 }, uCream: { value: new Color('#f3ebe1') }, uWarm: { value: new Color('#fdf4e6') } },
         vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy * 2.0, 1.0, 1.0); }`,
         fragmentShader: /* glsl */ `
-          uniform float uAspect, uAt, uGone; uniform vec3 uCream, uWarm, uInk; uniform sampler2D uText; uniform vec4 uBand;
-          uniform vec4 uBox[${WORDS.length}]; uniform float uRise[${WORDS.length}]; varying vec2 vUv;
+          uniform float uAspect, uAt; uniform vec3 uCream, uWarm; varying vec2 vUv;
           void main() {
             vec2 q = (vUv - vec2(uAt, 0.55)) * vec2(uAspect, 1.0);
-            vec3 col = mix(uWarm, uCream, smoothstep(0.0, 0.62, length(q)));
-            // the headline: as the camera sets off it lifts and fades (as the page's copy did)
-            vec2 t = (vUv - vec2(0.0, uGone * 0.06) - uBand.xy) / (uBand.zw - uBand.xy);
-            float ink = 0.0;
-            for (int i = 0; i < ${WORDS.length}; i++) {
-              vec4 b = uBox[i];
-              if (t.x < b.x || t.x > b.y || t.y < b.z || t.y > b.w) continue;
-              vec2 s = t + vec2(0.0, (1.0 - uRise[i]) * (b.w - b.z)); // (rising: it's drawn from lower down in its box)
-              if (s.y <= b.w) ink = max(ink, texture2D(uText, s).a);
-            }
-            col = mix(col, uInk, ink * (1.0 - uGone));
-            gl_FragColor = vec4(col, 1.0);
+            gl_FragColor = vec4(mix(uWarm, uCream, smoothstep(0.0, 0.62, length(q))), 1.0);
             #include <colorspace_fragment>
           }`,
       }),
     [],
   )
-  const head = useMemo(() => (fontsIn ? headline(size.width, size.height, Math.min(devicePixelRatio, 2)) : null), [size.width, size.height, fontsIn > 0])
-  const [, redo] = useState(0)
-  useEffect(() => {
-    if (fontsIn) return
-    const id = setInterval(() => fontsIn && redo(1), 50) // (the faces are self-hosted: this is a moment at most)
-    return () => clearInterval(id)
-  }, [])
-  useEffect(() => {
-    if (!head) return
-    mat.uniforms.uText.value = head.tex
-    mat.uniforms.uBand.value.copy(head.band)
-    head.boxes.forEach((b, i) => mat.uniforms.uBox.value[i].copy(b))
-    return () => head.tex.dispose()
-  }, [head, mat])
   useEffect(() => () => mat.dispose(), [mat])
-  useFrame((st) => {
-    const u = mat.uniforms
-    u.uAspect.value = size.width / size.height
-    u.uAt.value = 0.5
-    u.uGone.value = clamp01(state.p * 16)
-    // the entrance: a word every 70ms from a quarter second after the cup is ready, each a 1.6s rise (power4 out)
-    const age = state.ready ? st.clock.elapsedTime - state.born - 0.25 : -1
-    u.uRise.value.forEach((_: number, i: number) => {
-      const x = SNAP || STILL ? 1 : clamp01((age - i * 0.07) / 1.6)
-      u.uRise.value[i] = 1 - Math.pow(1 - x, 4)
-    })
+  useFrame(() => {
+    mat.uniforms.uAspect.value = size.width / size.height
+    // the warm pool of light stays behind the cup (right of centre on a wide screen, until the camera sets off)
+    mat.uniforms.uAt.value = size.width / size.height >= WIDE ? 0.5 + SHIFT * (1 - ramp(state.p, 0.004, 0.1)) : 0.5
   })
   return (
     <mesh material={mat} renderOrder={-1000} frustumCulled={false}>
@@ -552,7 +450,12 @@ const ADRIFT_ALL: [number, number, number, number][] = [
   [-2.5, 2.3, -0.6, 0.34], [2.3, 2.6, -1.0, 0.4], [-1.7, 0.6, 1.0, 0.26], [1.9, 0.9, 0.8, 0.3],
   [-3.3, 1.2, -1.6, 0.3], [3.2, 1.5, -1.4, 0.26], [0.9, 3.0, -0.8, 0.24], [-1.0, 2.9, 0.3, 0.2],
 ]
-const ADRIFT = PHONE ? ADRIFT_ALL.slice(0, 5) : ADRIFT_ALL
+// wide screens (cup right of centre): clear of the headline's column, round the cup and above and below the words
+const ADRIFT_WIDE: [number, number, number, number][] = [
+  [1.55, 2.2, -0.6, 0.34], [-1.05, 2.3, -0.4, 0.22], [1.35, 0.3, 0.6, 0.3], [-0.95, 0.05, 0.9, 0.24],
+  [2.0, 1.35, -1.6, 0.26], [0.95, 2.55, -1.2, 0.2], [-2.6, -0.35, -0.8, 0.22], [-3.2, 2.7, -2.0, 0.24],
+]
+const ADRIFT = PHONE ? ADRIFT_ALL.slice(0, 5) : typeof innerWidth !== 'undefined' && innerWidth / innerHeight >= 1.1 ? ADRIFT_WIDE : ADRIFT_ALL
 function Adrift() {
   const { geos, mat } = useIce({ refract: !PHONE, thickness: 0.3 })
   const group = useRef<Group>(null)

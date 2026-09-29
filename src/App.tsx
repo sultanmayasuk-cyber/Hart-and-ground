@@ -182,14 +182,15 @@ export default function App() {
         {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
         <section id="dive" className={`dive relative ${LIVE3D ? (PHONE ? 'h-[400svh]' : 'h-[620svh]') : 'h-svh'}`}>
           <div className="sticky top-0 h-lvh overflow-hidden">
-            {/* with the 3D on, the headline is drawn on the wall behind the cup (Backdrop in scene/Dive.tsx) and this one is
-                for readers and search; on the still it's set here */}
+            {/* the headline and its line: a column left of the cup on a wide screen, over it on an upright one */}
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">
-              <h1 className={LIVE3D ? 'sr-only' : 'hero-h'}>
-                <span className="line"><span>A</span></span> <span className="line"><span>little</span></span> <span className="line"><span><em>escape</em></span></span>{' '}
-                <span className="line"><span>in</span></span> <span className="line"><span>Richmond.</span></span>
-              </h1>
-              <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
+              <div className="hero-block">
+                <h1 className="hero-h">
+                  <span className="line"><span>A little <em>escape</em></span></span>
+                  <span className="line"><span>in Richmond.</span></span>
+                </h1>
+                <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
+              </div>
             </div>
             {LIVE3D ? (
               <>
