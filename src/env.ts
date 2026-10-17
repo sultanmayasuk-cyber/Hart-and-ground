@@ -1,6 +1,8 @@
-// What this visitor's device can take. WEBGL: can it draw the 3D at all. REDUCED: they've asked their device to
-// minimise motion. Without either, the site stands still: a photograph of the hero cup in place of the dive, no cups
-// beside the menu, no smoothed scrolling. Everything else is the same page.
+// What this visitor's device can take. WEBGL: can it draw the 3D at all; without it the site stands still: a photograph
+// of the hero cup in place of the dive, the cups' photograph beside the menu. REDUCED: they've asked their device to
+// minimise motion (iOS Reduce Motion, which many iPhones have on: the café's own staff did, 2026-10-17, and saw only
+// the photographs). They still get the 3D, since it moves only with their own scrolling; the scenes drop their own
+// ambient motion (`STILL`) and Lenis's smoothing is off.
 export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 export const WEBGL = (() => {
   try {
@@ -10,7 +12,7 @@ export const WEBGL = (() => {
     return false
   }
 })()
-export const LIVE3D = WEBGL && !REDUCED
+export const LIVE3D = WEBGL
 // PHONE: held upright, narrow. Nearly everyone comes on a phone, so the menu's live cups are there too (2026-09-23),
 // laid out for the narrow screen in Landing.tsx; only a device with no 3D at all gets the photograph.
 export const PHONE = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 767px)').matches

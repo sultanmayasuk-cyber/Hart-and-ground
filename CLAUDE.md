@@ -22,7 +22,7 @@
 
 ## Devices
 
-- `src/env.ts`: `LIVE3D` (WebGL available and motion not reduced); `LIVE_CUPS` is the same (since 2026-09-23 phones get the live menu cups too: nearly every visitor is on a phone). Without `LIVE3D` the hero is `public/hero-still.jpg`, the dive section is one screen, Lenis is off, and the menu shows `public/cups-still.webp` instead of the Landing canvas. Both stills were saved off the live canvases in dev (`?snap` sets `preserveDrawingBuffer`).
+- `src/env.ts`: `LIVE3D` (WebGL available; Reduce Motion no longer turns it off, 2026-10-17: the staff's iPhones had it on and saw only the stills); `LIVE_CUPS` is the same (since 2026-09-23 phones get the live menu cups too: nearly every visitor is on a phone). Without `LIVE3D` the hero is `public/hero-still.jpg`, the dive section is one screen, Lenis is off, and the menu shows `public/cups-still.webp` instead of the Landing canvas. Both stills were saved off the live canvases in dev (`?snap` sets `preserveDrawingBuffer`).
 - The header wears a band in the colour of the page block under it (`--band`, set on scroll in `App.tsx`; split at a block's edge so no colour ever shows over another), fading out below, so page text can't run through the nav. Not a backdrop blur: that silently did nothing in the user's Chrome.
 - A cream loader with the stag growing covers the page until Dive dispatches `hg-ready` (7s cap).
 - Fonts are self-hosted (`@fontsource/cinzel`, `@fontsource/crimson-pro`, imported in `main.tsx`); no third-party requests.
