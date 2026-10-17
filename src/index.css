@@ -87,6 +87,8 @@
   .dq:nth-child(even) span { animation-duration: 11s; animation-direction: alternate-reverse; }
   @keyframes drift { from { transform: translate3d(-2.2vw, 0.6svh, 0) rotate(-1.4deg); } to { transform: translate3d(2.2vw, -0.6svh, 0) rotate(1.4deg); } }
   .dq.on-milk { color: var(--plum); text-shadow: none; }
+  /* dev ?render (src/render.ts): the frames are taken off the bare canvas */
+  .render .hero-copy, .render .dive-quotes, .render .hdr, .render .loader { display: none; }
   /* phones: no grain fixed over the 3D (costly on iOS) */
   @media (max-width: 767px) { .site::after { display: none; } }
 

@@ -1,7 +1,8 @@
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { LIVE3D, LIVE_CUPS, PHONE } from './env'
+import { FRAMES, LIVE3D, LIVE_CUPS, PHONE, RENDER } from './env'
+import ErrorBoundary from './ErrorBoundary'
 import { clock, HOURS } from './openingHours'
 import { PHONE_QUOTES } from './quotes'
 import { useLenis } from './hooks/useLenis'
@@ -15,6 +16,9 @@ import Story from './sections/Story'
 
 const Landing = lazy(() => import('./scene/Landing'))
 const Dive = lazy(() => import('./scene/Dive'))
+// phones: the same two scenes as frame sequences (no three.js on a phone at all; env.ts)
+const CupFrames = lazy(() => import('./scene/CupFrames'))
+const DiveFrames = lazy(() => import('./scene/DiveFrames'))
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -32,6 +36,20 @@ export default function App() {
   useScrollDriver()
   const root = useRef<HTMLDivElement>(null)
   const [loaded, setLoaded] = useState(!LIVE3D) // the 3D is on screen (or there is none to wait for)
+  // the 3D gave out (a scene threw, or the GPU took its context away): the stills stand in, the page goes on
+  const [dead, setDead] = useState(false)
+  const live = LIVE3D && !dead
+  const cups = LIVE_CUPS && !dead
+  useEffect(() => {
+    const lost = () => { setDead(true); setLoaded(true) }
+    window.addEventListener('hg-lost', lost)
+    return () => window.removeEventListener('hg-lost', lost)
+  }, [])
+  // dev: ?render=dive|cups draws the phones' frames off the live scenes (src/render.ts)
+  useEffect(() => {
+    const r = RENDER
+    if (import.meta.env.DEV && r) import('./render').then((m) => m.render(r))
+  }, [])
 
   useEffect(() => {
     document.title = 'Hart & Ground · Café & Roasters, London'
@@ -114,10 +132,14 @@ export default function App() {
       n++
       if (t - since > 1000) {
         const cv = document.querySelector<HTMLCanvasElement>('#dive canvas')
+        const f = (window as unknown as { __frames?: { dive: { i: number; drawn: number; decoded: number }; cups: { i: number; drawn: number; decoded: number; on: boolean } } }).__frames
         const c = (window as unknown as { __cups?: { stage: { ready: boolean; act: number; size: number; frames: number; loop: string }; where: { hot: { y: number }; matcha: { y: number } }; err: string } }).__cups
         const cups = document.querySelectorAll('canvas')[0] as HTMLCanvasElement | undefined
         el.textContent = `${Math.round((n * 1000) / (t - since))} fps · worst ${Math.round(worst)} ms · ${cv?.width}x${cv?.height} @${devicePixelRatio}` +
-          (c ? ` · cups ${c.stage.ready ? 'ready' : 'warming'} act ${c.stage.act.toFixed(2)} f ${c.stage.frames} ${c.stage.loop} pa ${page.act.toFixed(2)} y ${c.where.hot.y.toFixed(2)}/${c.where.matcha.y.toFixed(2)} s ${c.stage.size.toFixed(2)} cv ${cups?.width}x${cups?.height} ${c.err}` : ' · no cups')
+          (c ? ` · cups ${c.stage.ready ? 'ready' : 'warming'} act ${c.stage.act.toFixed(2)} f ${c.stage.frames} ${c.stage.loop} pa ${page.act.toFixed(2)} y ${c.where.hot.y.toFixed(2)}/${c.where.matcha.y.toFixed(2)} s ${c.stage.size.toFixed(2)} cv ${cups?.width}x${cups?.height} ${c.err}` : '') +
+          (f?.dive ? ` · frames dive ${f.dive.i}/${f.dive.drawn} (${f.dive.decoded} in)` : '') +
+          (f?.cups ? ` cups ${f.cups.on ? 'on' : 'off'} ${f.cups.i}/${f.cups.drawn} (${f.cups.decoded} in) pa ${page.act.toFixed(2)}` : '') +
+          (c || f ? '' : ' · no cups')
         n = 0
         worst = 0
         since = t
@@ -153,15 +175,22 @@ export default function App() {
   }, [loaded])
 
   return (
-    <div ref={root} className={`site ${LIVE3D ? '' : 'no-dive'} ${LIVE_CUPS ? '' : 'no-cups'}`}>
+    <div ref={root} className={`site ${live || FRAMES ? '' : 'no-dive'} ${cups || FRAMES ? '' : 'no-cups'}`}>
       {LIVE3D && (
         <div className={`loader ${loaded ? 'gone' : ''}`} aria-hidden>
           <span className="stag" />
         </div>
       )}
-      {LIVE_CUPS && (
+      {cups && (
+        <ErrorBoundary fallback={null} onError={() => setDead(true)}>
+          <Suspense fallback={null}>
+            <Landing />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+      {FRAMES && (
         <Suspense fallback={null}>
-          <Landing />
+          <CupFrames />
         </Suspense>
       )}
 
@@ -180,7 +209,7 @@ export default function App() {
 
       <main>
         {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
-        <section id="dive" className={`dive relative ${LIVE3D ? (PHONE ? 'h-[400svh]' : 'h-[620svh]') : 'h-svh'}`}>
+        <section id="dive" className={`dive relative ${live || FRAMES ? (PHONE ? 'h-[400svh]' : 'h-[620svh]') : 'h-svh'}`}>
           <div className="sticky top-0 h-lvh overflow-hidden">
             {/* the headline and its line: a column left of the cup on a wide screen, over it on an upright one */}
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">
@@ -192,11 +221,11 @@ export default function App() {
                 <p className="prose hero-sub">Specialty coffee, ceremonial matcha and desserts, on Sheen Lane.</p>
               </div>
             </div>
-            {LIVE3D ? (
+            {live || FRAMES ? (
               <>
-                <Suspense fallback={null}>
-                  <Dive />
-                </Suspense>
+                <ErrorBoundary fallback={<img className="absolute inset-0 h-full w-full object-cover" src="/hero-still.jpg" alt="A Hart & Ground iced latte" />} onError={() => setDead(true)}>
+                  <Suspense fallback={null}>{FRAMES ? <DiveFrames /> : <Dive />}</Suspense>
+                </ErrorBoundary>
                 {/* on a phone the cup lines are set in the page, not in the 3D: sharp at any size, and free */}
                 {PHONE && (
                   <div className="dive-quotes" aria-hidden>
