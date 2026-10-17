@@ -17,6 +17,17 @@ export default function CupFrames() {
     const ctx = c?.getContext('2d')
     if (!c || !ctx) return
     const seq = new Sequence(CUPS.dir, CUPS.n)
+    // the frames' act values (render.ts spaces the frames by motion): act -> fractional frame position
+    let acts: number[] | null = null
+    fetch(`${CUPS.dir}.json`).then((r) => r.json()).then((j: { acts: number[] }) => { acts = j.acts }).catch(() => {})
+    const frameAt = (a: number) => {
+      if (!acts) return (a / 4) * (CUPS.n - 1)
+      let lo = 0
+      let hi = acts.length - 1
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (acts[mid] <= a) lo = mid; else hi = mid }
+      const span = acts[hi] - acts[lo]
+      return lo + (span > 0 ? Math.min(1, Math.max(0, (a - acts[lo]) / span)) : 0)
+    }
     let act = 0
     let last = performance.now()
     let drawn: string | null = null
@@ -33,16 +44,16 @@ export default function CupFrames() {
         c.style.display = on ? '' : 'none'
       }
       if (!on) return
-      const x = Math.min(CUPS.n - 1, Math.max(0, (act / 4) * (CUPS.n - 1)))
-      const i = Math.floor(x)
+      const x = Math.min(CUPS.n - 1, Math.max(0, frameAt(act)))
+      const i = Math.round(x) // (no blend for the cups: the frames are spaced so each step is small, and two blended cups read as a double)
       cupFrames.i = i
       seq.focus(i)
       cupFrames.fetched = seq.fetched
       cupFrames.decoded = seq.decoded
       const resized = fit(c)
-      const key = `${i}:${(x - i).toFixed(2)}`
+      const key = `${i}:0.00`
       if (key === drawn && !resized) return
-      const did = cover(ctx, seq, x, true)
+      const did = cover(ctx, seq, i, true)
       if (!did) return
       drawn = did === key ? key : did
       cupFrames.drawn = i

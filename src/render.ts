@@ -46,9 +46,69 @@ export async function render(seq: 'dive' | 'cups') {
   let t = 1
   const tick = () => advance((t += TICK))
   for (let k = 0; k < 8; k++) tick() // (the dive's warm-up frames)
+
+  // The cups' frames are spaced by motion, not by scroll: the stage is sampled finely, how far the cups move on
+  // screen (and turn) between samples is summed up, and the frames are placed at equal steps of that, so every
+  // frame-to-frame change is about the same small one (spaced evenly over the scroll, the trade moved them a long
+  // way in a few frames, and blending two frames showed two cups). The frames' act values go in cups.json for the
+  // player (scene/CupFrames.tsx).
+  let acts: number[] = []
+  if (seq === 'cups') {
+    const w = (window as unknown as { __cups: { where: Record<'hot' | 'matcha', { x: number; y: number; z: number; s: number }> } }).__cups.where
+    const SAMPLES = 400
+    const at = (k: number) => (k / SAMPLES) * 4
+    const place = () => {
+      const p = (c: { x: number; y: number; z: number; s: number }) => {
+        const d = 5.2 - c.z // the camera stands at z 5.2 (cups.ts CAM_Z)
+        return [c.x / d, c.y / d, c.s / d] // (screen position and size, in the camera's own units)
+      }
+      return [...p(w.hot), ...p(w.matcha)]
+    }
+    const twirl = (act: number) => { const u = Math.min(1, Math.max(0, act - 1)); return u * u * (3 - 2 * u) } // (Landing.tsx: smooth(clamp01(act - 1)))
+    const dist: number[] = [0]
+    let prev: number[] | null = null
+    let prevTw = 0
+    for (let k = 0; k <= SAMPLES; k++) {
+      page.act = at(k)
+      for (let j = 0; j < 6; j++) tick()
+      const cur = place()
+      const tw = twirl(at(k))
+      if (prev) {
+        let d = 0
+        for (let q = 0; q < 2; q++) {
+          const o = q * 3
+          // only what's on screen counts: the cup stands s tall on its base, the screen's half-height is tan(35°/2) ≈ 0.32
+          const on = (c: number[]) => c[o + 1] + c[o + 2] > -0.36 && c[o + 1] < 0.36
+          const vis = on(cur) || on(prev)
+          if (!vis) continue
+          d += Math.hypot(cur[o] - prev[o], cur[o + 1] - prev[o + 1]) + Math.abs(cur[o + 2] - prev[o + 2]) * 0.5
+          d += Math.abs(tw - prevTw) * 2 * Math.PI * cur[o + 2] * 0.35 // a full turn moves the print round the cup's girth
+        }
+        dist.push(dist[k - 1] + d)
+      }
+      prev = cur
+      prevTw = tw
+      if (k % 40 === 0) say(`measuring the cups' motion ${k}/${SAMPLES}`)
+      await wait(0)
+    }
+    const total = dist[SAMPLES]
+    acts = [0]
+    for (let i = 1; i < n - 1; i++) {
+      const want = (i / (n - 1)) * total
+      let k = 0
+      while (k < SAMPLES && dist[k + 1] < want) k++
+      const f = dist[k + 1] > dist[k] ? (want - dist[k]) / (dist[k + 1] - dist[k]) : 0
+      acts.push(at(k + f))
+    }
+    acts.push(4)
+    const res = await fetch(`${RECEIVER}/frames/cups/manifest`, { method: 'POST', body: JSON.stringify({ acts: acts.map((a) => +a.toFixed(4)) }) }).catch(() => null)
+    say(`cups.json ${res?.ok ? 'saved' : 'NOT SAVED'} · motion ${total.toFixed(3)} over ${n} frames`)
+    await wait(500)
+  }
+
   for (let i = 0; i < n; i++) {
     if (seq === 'dive') page.dive = (i / (n - 1)) * DIVE.top
-    else page.act = (i / (n - 1)) * 4
+    else page.act = acts[i]
     for (let k = 0; k < TICKS; k++) tick()
     await wait(10)
     ctx.clearRect(0, 0, FRAME_W, FRAME_H)
@@ -57,7 +117,7 @@ export async function render(seq: 'dive' | 'cups') {
       ctx.fillRect(0, 0, FRAME_W, FRAME_H)
     }
     ctx.drawImage(canvas, 0, 0, FRAME_W, FRAME_H)
-    const blob = await new Promise<Blob | null>((r) => out.toBlob(r, 'image/webp', seq === 'dive' ? 0.8 : 0.85))
+    const blob = await new Promise<Blob | null>((r) => out.toBlob(r, 'image/webp', seq === 'dive' ? 0.8 : 0.72))
     if (!blob) return say(`frame ${i}: no webp`)
     const res = await fetch(`${RECEIVER}/frames/${seq}/${i}`, { method: 'POST', body: blob }).catch(() => null)
     say(`${seq} ${i + 1}/${n} · ${Math.round(blob.size / 1024)} KB · ${res?.ok ? 'saved' : 'NOT SAVED (is `npm run frames` running?)'}`)
