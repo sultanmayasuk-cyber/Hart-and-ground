@@ -4,6 +4,6 @@
 // stand over the latte paper). Regenerate with `npm run frames` whenever either scene changes.
 export const FRAME_W = 720
 export const FRAME_H = 1560
-export const DIVE = { dir: '/frames/dive', n: 120, top: 0.998 } // top: the last frame's page.dive (at 1 nothing is drawn)
-export const CUPS = { dir: '/frames/cups', n: 64 }
+export const DIVE = { dir: '/frames/dive', n: 180, top: 0.998 } // top: the last frame's page.dive (at 1 nothing is drawn)
+export const CUPS = { dir: '/frames/cups', n: 96 }
 export const frameUrl = (dir: string, i: number) => `${dir}/${String(i).padStart(3, '0')}.webp`

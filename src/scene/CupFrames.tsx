@@ -8,7 +8,7 @@ import { page } from './scroll'
 // cups alone), on a transparent canvas fixed over the page like the live one, scrubbed by page.act (0 parked below
 // .. 4 gone under the story), eased as the live stage eases it. Off the page entirely (display none, nothing drawn)
 // while the cups are out of sight: a fixed full-screen layer costs the phone every frame it's there.
-export const cupFrames = { i: 0, drawn: -1, decoded: 0, fetched: 0, on: false } // (read by the ?fps readout)
+export const cupFrames = { i: 0, drawn: 0, decoded: 0, fetched: 0, on: false } // (read by the ?fps readout)
 ;((window as unknown as { __frames?: Record<string, unknown> }).__frames ??= {}).cups = cupFrames
 export default function CupFrames() {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -19,7 +19,7 @@ export default function CupFrames() {
     const seq = new Sequence(CUPS.dir, CUPS.n)
     let act = 0
     let last = performance.now()
-    let drawn = -1
+    let drawn: string | null = null
     let on = false
     const stop = onFrame(() => {
       const now = performance.now()
@@ -33,20 +33,19 @@ export default function CupFrames() {
         c.style.display = on ? '' : 'none'
       }
       if (!on) return
-      const i = Math.min(CUPS.n - 1, Math.round((act / 4) * (CUPS.n - 1)))
+      const x = Math.min(CUPS.n - 1, Math.max(0, (act / 4) * (CUPS.n - 1)))
+      const i = Math.floor(x)
       cupFrames.i = i
       seq.focus(i)
       cupFrames.fetched = seq.fetched
       cupFrames.decoded = seq.decoded
       const resized = fit(c)
-      if (i === drawn && !resized) return
-      const got = seq.pick(i)
-      if (!got) return
-      if (got.i === drawn && !resized) return
-      cover(ctx, got.img, true)
-      drawn = got.i
-      cupFrames.drawn = drawn
-      cupFrames.decoded = seq.decoded
+      const key = `${i}:${(x - i).toFixed(2)}`
+      if (key === drawn && !resized) return
+      const did = cover(ctx, seq, x, true)
+      if (!did) return
+      drawn = did === key ? key : did
+      cupFrames.drawn = i
     })
     // the first frames come in while the dive still plays, so the cups' arrival can't wait on the network
     const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { near.disconnect(); seq.focus(0) } }, { rootMargin: '150% 0px' })

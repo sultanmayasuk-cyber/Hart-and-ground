@@ -106,15 +106,32 @@ export class Sequence {
   }
 }
 
-// Draw a frame to cover the canvas, like object-fit: cover (the frames are 9:19.5; phones run 16:9 to 19.5:9, and
-// the picture is composed for the middle of the screen).
-export function cover(ctx: CanvasRenderingContext2D, img: CanvasImageSource, clear: boolean) {
+// Draw the picture for a fractional frame position x: the frame below it, and the one above blended over it by the
+// fraction between (so what's in motion moves on between frames instead of snapping from one to the next; a phone
+// at 30 fps showed every jump). Covers the canvas like object-fit: cover (the frames are 9:19.5; phones run 16:9 to
+// 19.5:9, and the picture is composed for the middle of the screen). Returns a key for what was drawn.
+export function cover(ctx: CanvasRenderingContext2D, seq: Sequence, x: number, clear: boolean): string | null {
+  const i = Math.floor(x)
+  const f = x - i
+  const a = seq.pick(i)
+  if (!a) return null
+  const b = f > 0.02 && a.i === i ? seq.pick(i + 1) : null
+  const blend = b && b.i === i + 1 ? f : 0
   const { width: W, height: H } = ctx.canvas
   const s = Math.max(W / FRAME_W, H / FRAME_H)
   const w = FRAME_W * s
   const h = FRAME_H * s
+  const dx = (W - w) / 2
+  const dy = (H - h) / 2
   if (clear) ctx.clearRect(0, 0, W, H)
-  ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h)
+  ctx.globalAlpha = clear ? 1 - blend : 1 // (alpha frames: both faded, so the pair never reads as a double)
+  ctx.drawImage(a.img, dx, dy, w, h)
+  if (blend > 0) {
+    ctx.globalAlpha = blend
+    ctx.drawImage(b!.img, dx, dy, w, h)
+  }
+  ctx.globalAlpha = 1
+  return `${a.i}:${blend.toFixed(2)}`
 }
 
 // size the canvas to its box, at the device's pixels (capped: the frames are 720 across)
