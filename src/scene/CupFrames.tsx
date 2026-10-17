@@ -47,14 +47,12 @@ export default function CupFrames() {
       drawn = did === key ? key : did
       cupFrames.drawn = i
     })
-    // the first frames come in while the dive still plays, so the cups' arrival can't wait on the network
-    const near = new IntersectionObserver(([e]) => { if (e.isIntersecting) { near.disconnect(); seq.focus(0) } }, { rootMargin: '150% 0px' })
-    const menu = document.getElementById('menu')
-    if (menu) near.observe(menu)
-    else seq.focus(0)
+    // the frames come in while the dive still plays (after its own frames have had the connection), so the cups'
+    // arrival can't wait on the network
+    const t = setTimeout(() => seq.focus(0), 2500)
     return () => {
       stop()
-      near.disconnect()
+      clearTimeout(t)
     }
   }, [])
   return <canvas ref={canvas} className="pointer-events-none fixed inset-0 z-10 h-full w-full" style={{ display: 'none' }} />

@@ -124,8 +124,7 @@ export function cover(ctx: CanvasRenderingContext2D, seq: Sequence, x: number, c
   const dx = (W - w) / 2
   const dy = (H - h) / 2
   if (clear) ctx.clearRect(0, 0, W, H)
-  ctx.globalAlpha = clear ? 1 - blend : 1 // (alpha frames: both faded, so the pair never reads as a double)
-  ctx.drawImage(a.img, dx, dy, w, h)
+  ctx.drawImage(a.img, dx, dy, w, h) // (the frame below stays solid: fading it too made the alpha cups flicker against the page)
   if (blend > 0) {
     ctx.globalAlpha = blend
     ctx.drawImage(b!.img, dx, dy, w, h)
