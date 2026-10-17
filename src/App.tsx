@@ -209,7 +209,7 @@ export default function App() {
 
       <main>
         {/* 1 · the dive (scene/Dive.tsx): the opening words stand with the cup, then the camera goes in */}
-        <section id="dive" className={`dive relative ${live || FRAMES ? (PHONE ? 'h-[400svh]' : 'h-[620svh]') : 'h-svh'}`}>
+        <section id="dive" className={`dive relative ${live || FRAMES ? (PHONE ? 'h-[300svh]' : 'h-[620svh]') : 'h-svh'}`}>
           <div className="sticky top-0 h-lvh overflow-hidden">
             {/* the headline and its line: a column left of the cup on a wide screen, over it on an upright one */}
             <div className="hero-copy pointer-events-none absolute inset-0 z-[4]">

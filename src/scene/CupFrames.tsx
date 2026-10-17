@@ -36,7 +36,7 @@ export default function CupFrames() {
       const now = performance.now()
       const dt = Math.min((now - last) / 1000, 1 / 30)
       last = now
-      act = damp(act, page.act, 6, dt)
+      act = damp(act, page.act, 10, dt) // (tighter than the live stage's 6: on a touch screen the lag read as slow)
       const want = (page.act > 0.0005 || act > 0.0005) && (page.act < 3.999 || act < 3.999)
       if (want !== on) {
         on = want

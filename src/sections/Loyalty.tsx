@@ -1,3 +1,4 @@
+import { PHONE } from '../env'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef } from 'react'
 import { LINKS } from '../links'
@@ -43,7 +44,7 @@ export default function Loyalty() {
     }
   }, [])
   return (
-    <section id="rewards" ref={wrap} className="rewards plum relative h-[260svh]">
+    <section id="rewards" ref={wrap} className={`rewards plum relative ${PHONE ? 'h-[200svh]' : 'h-[260svh]'}`}>
       <div className="sticky top-0 h-lvh overflow-hidden">
         <span className="rw-glow" aria-hidden />
         <div className="rw-grid">

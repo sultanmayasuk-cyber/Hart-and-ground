@@ -29,7 +29,7 @@ export default function DiveFrames() {
       last = now
       // asleep once the dive is scrolled past and the camera has caught up (the menu is over it by then)
       if (page.dive >= 0.999 && Math.abs(p - page.dive) < 1e-4) return
-      p = damp(p, page.dive, 3.2, dt)
+      p = damp(p, page.dive, 7, dt) // (tighter than the live dive's 3.2: on a touch screen the lag read as slow)
       lines?.style.setProperty('--p', p.toFixed(4))
       const x = Math.min(DIVE.n - 1, Math.max(0, (p / DIVE.top) * (DIVE.n - 1)))
       const i = Math.floor(x)
