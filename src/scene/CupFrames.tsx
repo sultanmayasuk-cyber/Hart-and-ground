@@ -8,7 +8,7 @@ import { page } from './scroll'
 // cups alone), on a transparent canvas fixed over the page like the live one, scrubbed by page.act (0 parked below
 // .. 4 gone under the story), eased as the live stage eases it. Off the page entirely (display none, nothing drawn)
 // while the cups are out of sight: a fixed full-screen layer costs the phone every frame it's there.
-export const cupFrames = { i: 0, drawn: -1, decoded: 0, on: false } // (read by the ?fps readout)
+export const cupFrames = { i: 0, drawn: -1, decoded: 0, fetched: 0, on: false } // (read by the ?fps readout)
 ;((window as unknown as { __frames?: Record<string, unknown> }).__frames ??= {}).cups = cupFrames
 export default function CupFrames() {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -36,6 +36,8 @@ export default function CupFrames() {
       const i = Math.min(CUPS.n - 1, Math.round((act / 4) * (CUPS.n - 1)))
       cupFrames.i = i
       seq.focus(i)
+      cupFrames.fetched = seq.fetched
+      cupFrames.decoded = seq.decoded
       const resized = fit(c)
       if (i === drawn && !resized) return
       const got = seq.pick(i)

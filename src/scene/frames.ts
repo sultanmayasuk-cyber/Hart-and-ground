@@ -1,20 +1,25 @@
 import { FRAME_H, FRAME_W, frameUrl } from '../framesSpec'
 
-// A scroll-scrubbed image sequence (the phone's dive and menu cups, framesSpec.ts). Frames are fetched and decoded off
-// the main thread (createImageBitmap), a few at a time, closest to where the page is first; only a window of them
-// round the current frame is kept decoded (a 720×1560 bitmap is 4.5 MB: keeping them all would sink an older
-// phone). A coarse set, every eighth frame at half size, is fetched early and kept for good, so a flick through the
-// page always has something near to show while the exact frames come in.
+// A scroll-scrubbed image sequence (the phone's dive and menu cups, framesSpec.ts). All the bytes come down as soon
+// as the sequence is wanted (a few MB, many requests at once over HTTP/2: on a real connection fetching only round the
+// current frame fell behind a flick and showed every eighth frame, 2026-10-17), and are kept as blobs. Decoding is
+// what's rationed: a 720×1560 bitmap is 4.5 MB, so only a window of frames round the current one is kept decoded
+// (createImageBitmap, off the main thread), decoding ahead in the direction of travel; plus every eighth frame at
+// half size, decoded as soon as its bytes land and kept, so a flick past the window always has something near to show.
 const COARSE = 8
-const PARALLEL = 4
+const FETCHES = 12
+const DECODES = 3
 
 export class Sequence {
+  private bytes: (Blob | undefined)[]
   private full: (ImageBitmap | undefined)[]
   private half: (ImageBitmap | undefined)[]
+  private fetching = new Set<number>()
+  private decoding = new Set<string>()
   private failed = new Set<number>()
-  private loading = new Map<number, 'full' | 'half'>()
   private at = 0
   private dir = 1
+  private started = false
   private path: string
   n: number
   private keep: number
@@ -22,6 +27,7 @@ export class Sequence {
     this.path = path
     this.n = n
     this.keep = keep
+    this.bytes = new Array(n)
     this.full = new Array(n)
     this.half = new Array(n)
   }
@@ -30,6 +36,7 @@ export class Sequence {
   focus(i: number) {
     if (i !== this.at) this.dir = i > this.at ? 1 : -1
     this.at = i
+    this.started = true
     for (let k = 0; k < this.n; k++) {
       const b = this.full[k]
       if (b && Math.abs(k - i) > this.keep) {
@@ -61,37 +68,54 @@ export class Sequence {
   get decoded() {
     return this.full.filter(Boolean).length
   }
+  get fetched() {
+    return this.bytes.filter(Boolean).length
+  }
 
   private pump() {
-    while (this.loading.size < PARALLEL) {
-      const next = this.next()
-      if (!next) return
-      this.load(next[0], next[1])
+    if (!this.started) return
+    // bytes: the frame the page is on, then ahead of it, then behind, then everything else, in index order
+    const order: number[] = []
+    const seen = new Set<number>()
+    const add = (i: number) => { if (i >= 0 && i < this.n && !seen.has(i)) { seen.add(i); order.push(i) } }
+    add(this.at)
+    for (let d = 1; d <= this.keep * 2; d++) { add(this.at + d * this.dir); if (d % 2 === 0) add(this.at - d * this.dir) }
+    for (let k = 0; k < this.n; k++) add(k)
+    for (const i of order) {
+      if (this.fetching.size >= FETCHES) break
+      if (!this.bytes[i] && !this.fetching.has(i) && !this.failed.has(i)) this.fetch(i)
+    }
+    // decoding: the window round the current frame (ahead first), and the coarse set
+    for (const i of order) {
+      if (this.decoding.size >= DECODES) break
+      if (Math.abs(i - this.at) > this.keep) continue
+      if (this.bytes[i] && !this.full[i] && !this.decoding.has(`f${i}`)) this.decode(i, 'full')
+    }
+    for (let k = 0; k < this.n; k += COARSE) {
+      if (this.decoding.size >= DECODES + 1) break
+      if (this.bytes[k] && !this.half[k] && !this.decoding.has(`h${k}`)) this.decode(k, 'half')
     }
   }
 
-  // what to fetch next: the frame the page is on, then the ones ahead of it in the direction of travel, then behind;
-  // the coarse set is filled in between (first frame first, so the page opens on something)
-  private next(): [number, 'full' | 'half'] | null {
-    const want = (i: number, kind: 'full' | 'half') => i >= 0 && i < this.n && !this.failed.has(i) && !this.loading.has(i) && !(kind === 'full' ? this.full[i] : this.half[i]) && !(kind === 'half' && this.full[i])
-    if (want(0, 'full')) return [0, 'full']
-    if (want(this.at, 'full')) return [this.at, 'full']
-    for (let d = 1; d <= this.keep; d++) {
-      if (want(this.at + d * this.dir, 'full')) return [this.at + d * this.dir, 'full']
-      if (d % 3 === 0 && want(this.at - d * this.dir, 'full')) return [this.at - d * this.dir, 'full']
-    }
-    for (let k = 0; k < this.n; k += COARSE) if (want(k, 'half')) return [k, 'half']
-    if (want(this.n - 1, 'half')) return [this.n - 1, 'half']
-    for (let d = 1; d <= this.keep; d++) if (want(this.at - d * this.dir, 'full')) return [this.at - d * this.dir, 'full']
-    return null
-  }
-
-  private async load(i: number, kind: 'full' | 'half') {
-    this.loading.set(i, kind)
+  private async fetch(i: number) {
+    this.fetching.add(i)
     try {
       const res = await fetch(frameUrl(this.path, i))
       if (!res.ok) throw new Error(String(res.status))
-      const blob = await res.blob()
+      this.bytes[i] = await res.blob()
+    } catch {
+      this.failed.add(i)
+    } finally {
+      this.fetching.delete(i)
+      this.pump()
+    }
+  }
+
+  private async decode(i: number, kind: 'full' | 'half') {
+    const key = `${kind[0]}${i}`
+    this.decoding.add(key)
+    try {
+      const blob = this.bytes[i]!
       let bmp: ImageBitmap
       if (kind === 'half') {
         try {
@@ -100,14 +124,13 @@ export class Sequence {
           bmp = await createImageBitmap(blob)
         }
       } else bmp = await createImageBitmap(blob)
-      if (kind === 'full') {
-        if (Math.abs(i - this.at) <= this.keep || i === 0) this.full[i] = bmp
-        else bmp.close() // (the page has moved on since this was asked for)
-      } else this.half[i] = bmp
+      if (kind === 'half') this.half[i] = bmp
+      else if (Math.abs(i - this.at) <= this.keep) this.full[i] = bmp
+      else bmp.close() // (the page has moved on since this was asked for)
     } catch {
       this.failed.add(i)
     } finally {
-      this.loading.delete(i)
+      this.decoding.delete(key)
       this.pump()
     }
   }

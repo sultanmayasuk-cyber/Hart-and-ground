@@ -132,13 +132,13 @@ export default function App() {
       n++
       if (t - since > 1000) {
         const cv = document.querySelector<HTMLCanvasElement>('#dive canvas')
-        const f = (window as unknown as { __frames?: { dive: { i: number; drawn: number; decoded: number }; cups: { i: number; drawn: number; decoded: number; on: boolean } } }).__frames
+        const f = (window as unknown as { __frames?: { dive: { i: number; drawn: number; decoded: number; fetched: number }; cups: { i: number; drawn: number; decoded: number; fetched: number; on: boolean } } }).__frames
         const c = (window as unknown as { __cups?: { stage: { ready: boolean; act: number; size: number; frames: number; loop: string }; where: { hot: { y: number }; matcha: { y: number } }; err: string } }).__cups
         const cups = document.querySelectorAll('canvas')[0] as HTMLCanvasElement | undefined
         el.textContent = `${Math.round((n * 1000) / (t - since))} fps · worst ${Math.round(worst)} ms · ${cv?.width}x${cv?.height} @${devicePixelRatio}` +
           (c ? ` · cups ${c.stage.ready ? 'ready' : 'warming'} act ${c.stage.act.toFixed(2)} f ${c.stage.frames} ${c.stage.loop} pa ${page.act.toFixed(2)} y ${c.where.hot.y.toFixed(2)}/${c.where.matcha.y.toFixed(2)} s ${c.stage.size.toFixed(2)} cv ${cups?.width}x${cups?.height} ${c.err}` : '') +
-          (f?.dive ? ` · frames dive ${f.dive.i}/${f.dive.drawn} (${f.dive.decoded} in)` : '') +
-          (f?.cups ? ` cups ${f.cups.on ? 'on' : 'off'} ${f.cups.i}/${f.cups.drawn} (${f.cups.decoded} in) pa ${page.act.toFixed(2)}` : '') +
+          (f?.dive ? ` · frames dive ${f.dive.i}/${f.dive.drawn} (${f.dive.fetched} got, ${f.dive.decoded} in)` : '') +
+          (f?.cups ? ` cups ${f.cups.on ? 'on' : 'off'} ${f.cups.i}/${f.cups.drawn} (${f.cups.fetched} got, ${f.cups.decoded} in) pa ${page.act.toFixed(2)}` : '') +
           (c || f ? '' : ' · no cups')
         n = 0
         worst = 0

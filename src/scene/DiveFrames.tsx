@@ -8,7 +8,7 @@ import { page } from './scroll'
 // page. The first frame is a plain image under the canvas so the cup is there with the first paint; the canvas draws
 // over it as soon as the frame is decoded. The camera's progress is eased the same way the live one is (Dive.tsx Rig),
 // and written to the cup lines (.dive-quotes --p) as there.
-export const diveFrames = { i: 0, drawn: -1, decoded: 0 } // (read by the ?fps readout)
+export const diveFrames = { i: 0, drawn: -1, decoded: 0, fetched: 0 } // (read by the ?fps readout)
 ;((window as unknown as { __frames?: Record<string, unknown> }).__frames ??= {}).dive = diveFrames
 export default function DiveFrames() {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -34,6 +34,8 @@ export default function DiveFrames() {
       const i = Math.min(DIVE.n - 1, Math.round((p / DIVE.top) * (DIVE.n - 1)))
       diveFrames.i = i
       seq.focus(i)
+      diveFrames.fetched = seq.fetched
+      diveFrames.decoded = seq.decoded
       const resized = fit(c)
       if (i === drawn && !resized) return
       const got = seq.pick(i)
