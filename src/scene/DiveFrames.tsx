@@ -16,7 +16,7 @@ export default function DiveFrames() {
     const c = canvas.current
     const ctx = c?.getContext('2d')
     if (!c || !ctx) return
-    const seq = new Sequence(DIVE.dir, DIVE.n, DIVE.keep)
+    const seq = new Sequence(DIVE.dir, DIVE.n)
     const lines = document.querySelector<HTMLElement>('.dive-quotes')
     let p = 0
     let last = performance.now()
@@ -41,7 +41,7 @@ export default function DiveFrames() {
       const got = seq.pick(i)
       if (!got) return
       if (got.i === drawn && !resized) return
-      cover(ctx, got.bmp, false)
+      cover(ctx, got.img, false)
       drawn = got.i
       diveFrames.drawn = drawn
       diveFrames.decoded = seq.decoded

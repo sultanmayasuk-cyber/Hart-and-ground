@@ -16,7 +16,7 @@ export default function CupFrames() {
     const c = canvas.current
     const ctx = c?.getContext('2d')
     if (!c || !ctx) return
-    const seq = new Sequence(CUPS.dir, CUPS.n, CUPS.keep)
+    const seq = new Sequence(CUPS.dir, CUPS.n)
     let act = 0
     let last = performance.now()
     let drawn = -1
@@ -43,7 +43,7 @@ export default function CupFrames() {
       const got = seq.pick(i)
       if (!got) return
       if (got.i === drawn && !resized) return
-      cover(ctx, got.bmp, true)
+      cover(ctx, got.img, true)
       drawn = got.i
       cupFrames.drawn = drawn
       cupFrames.decoded = seq.decoded
