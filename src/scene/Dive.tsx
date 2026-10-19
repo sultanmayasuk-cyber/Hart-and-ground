@@ -26,12 +26,12 @@ import { finishCup } from './cupFinish'
 import { HEAP, heapRotation, inCup, useIce } from './ice'
 import { PHONE } from '../env'
 import { QUOTES } from '../quotes'
-import { DRACO } from './cups'
+import { DRACO, model } from './cups'
 import { damp, pointer } from './pointer'
 import { PointerRig } from './rigs'
 import { page } from './scroll'
 
-useGLTF.preload('/models/coffee.glb', DRACO)
+useGLTF.preload(model('coffee'), DRACO)
 
 // The hero: one iced latte on the cream counter; on a wide screen it stands right of centre, the headline to its left.
 // Scrolling (page.dive, 0..1) lifts the camera over the rim and down through the ice into the drink: past the cubes
@@ -144,7 +144,7 @@ function Rig() {
     }
     if (inside_ !== soft.current) {
       soft.current = inside_
-      res.set((inside_ ? (PHONE ? 0.7 : 1) : Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5)) * quality.current)
+      res.set((inside_ ? (PHONE ? 0.7 : 1) : Math.min(devicePixelRatio, PHONE ? 1.25 : 1.5)) * quality.current)
     }
     // phones: the cup lines are page text; they ride the same eased progress as the camera, written every frame
     // (scroll events on iOS arrive in bursts, which is what made them jerk)
@@ -187,7 +187,7 @@ function Rig() {
 // ---------- outside ----------
 
 function Cup() {
-  const gltf = useGLTF('/models/coffee.glb', DRACO)
+  const gltf = useGLTF(model('coffee'), DRACO)
   // its own copy: the menu's canvas (Landing.tsx) shows the same model, and an object can only live in one scene
   const scene = useMemo(() => {
     const c = gltf.scene.clone(true)
@@ -773,7 +773,7 @@ function Pump() {
 }
 
 export default function Dive() {
-  const [dpr, setDpr] = useState(() => Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5))
+  const [dpr, setDpr] = useState(() => Math.min(devicePixelRatio, PHONE ? 1.25 : 1.5)) // (phones: 1.25, 2026-10-19; 1.6 cost a third more pixels than the eye got back)
   useEffect(() => {
     res.set = setDpr
   }, [])

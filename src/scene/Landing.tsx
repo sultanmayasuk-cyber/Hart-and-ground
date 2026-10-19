@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef } from 'react'
 import { Mesh, ShaderMaterial, Texture, type Group, type MeshStandardMaterial } from 'three'
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
-import { CAM_Z, DRACO, HERO_FOV } from './cups'
+import { CAM_Z, DRACO, HERO_FOV, model } from './cups'
 import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { page, VIEW_H } from './scroll'
@@ -14,7 +14,7 @@ import PaperCup from './PaperCup'
 import IceHeap from './IceHeap'
 import Straw from './Straw'
 
-useGLTF.preload('/models/matcha.glb', DRACO)
+useGLTF.preload(model('matcha'), DRACO)
 
 // The two real cups (the hot coffee in its paper cup, the iced matcha) on a cream counter, the only 3D on the site. The camera never moves; the cups glide between marks
 // on springs as the page scrolls (page.act, driven by ScrollTriggers in App.tsx):
@@ -74,7 +74,7 @@ const where = { hot: { x: -10, y: 0, z: 0, s: 1, floor: 0 }, matcha: { x: 10, y:
 
 // the matcha: the Meshy model, finished and printed (the hot coffee is built in code: PaperCup.tsx)
 function Matcha() {
-  const { scene } = useGLTF('/models/matcha.glb', DRACO)
+  const { scene } = useGLTF(model('matcha'), DRACO)
   useEffect(() => {
     scene.traverse((o) => {
       if (o instanceof Mesh) {
@@ -291,7 +291,7 @@ function Pump() {
 export default function Landing() {
   return (
     <div className="cups-layer pointer-events-none fixed inset-0 z-10" style={{ visibility: 'hidden' }}>
-      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={[1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={PHONE ? 1.25 : [1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}
         onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); window.dispatchEvent(new Event('hg-lost')) })} // (the page falls back to its stills)
       >
         <Pump />
