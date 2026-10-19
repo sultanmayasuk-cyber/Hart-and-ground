@@ -24,7 +24,7 @@ import {
 import CupPrint from './CupPrint'
 import { finishCup } from './cupFinish'
 import { HEAP, heapRotation, inCup, useIce } from './ice'
-import { LITE, PHONE, REDUCED, RENDER } from '../env'
+import { PHONE } from '../env'
 import { QUOTES } from '../quotes'
 import { DRACO } from './cups'
 import { damp, pointer } from './pointer'
@@ -53,9 +53,9 @@ const ramp = (x: number, a: number, b: number) => smooth(clamp01((x - a) / (b - 
 
 // progress, damped a little more than Lenis already does, so the camera carries weight
 const state = { p: 0, ready: false, born: 0, warm: 0 } // born: clock time when everything was ready and the entrance began
-const STILL = REDUCED || !!RENDER // (rendering the phones' frames: every entrance already landed)
-// dev: ?snap puts the camera exactly where the page is (no easing), for checking frames one by one (and ?render takes them)
-const SNAP = import.meta.env.DEV && (!!RENDER || new URLSearchParams(location.search).has('snap'))
+const STILL = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+// dev: ?snap puts the camera exactly where the page is (no easing), for checking frames one by one
+const SNAP = import.meta.env.DEV && new URLSearchParams(location.search).has('snap')
 if (SNAP) Object.assign(window, { __dive: state })
 
 type Key = { p: number; pos: [number, number, number]; tgt: [number, number, number]; fov: number }
@@ -133,7 +133,7 @@ function Rig() {
     // and it watches itself: if frames run long (an older phone, a busy laptop) it draws fewer pixels, step by step,
     // until they don't. Smooth comes before sharp. It never steps back up (that would only oscillate).
     // (not while things are still loading and landing: those hitches aren't the device's steady pace)
-    if (state.ready && !RENDER && st.clock.elapsedTime - state.born > 4 && rawDt < 0.1) {
+    if (state.ready && st.clock.elapsedTime - state.born > 4 && rawDt < 0.1) {
       slow.current = slow.current * 0.97 + rawDt * 0.03
       if (++frames.current > 90 && slow.current > 1 / 40 && quality.current > 0.7) {
         quality.current *= 0.85
@@ -142,9 +142,9 @@ function Rig() {
         soft.current = !inside_ // (forces the size to be set again, below)
       }
     }
-    if (inside_ !== soft.current && !RENDER) {
+    if (inside_ !== soft.current) {
       soft.current = inside_
-      res.set((inside_ ? (LITE ? 0.7 : 1) : Math.min(devicePixelRatio, LITE ? 1.6 : 1.5)) * quality.current)
+      res.set((inside_ ? (PHONE ? 0.7 : 1) : Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5)) * quality.current)
     }
     // phones: the cup lines are page text; they ride the same eased progress as the camera, written every frame
     // (scroll events on iOS arrive in bursts, which is what made them jerk)
@@ -303,7 +303,7 @@ function Drink() {
           varying vec3 vWorld;
           void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
         fragmentShader: /* glsl */ `
-          #define SHELLS ${LITE ? 1 : 3}
+          #define SHELLS ${PHONE ? 1 : 3}
           uniform vec3 uCam, uCrema, uCaramel, uEspresso, uMilk, uCream, uSurface;
           uniform float uTime;
           varying vec3 vWorld;
@@ -385,10 +385,10 @@ const CUBES_ALL: [number, number, number, number][] = [
   [3.0, -0.9, 1.9, 1.05],
   [-0.4, -0.45, 1.6, 0.9],
 ]
-const CUBES = LITE ? CUBES_ALL.slice(0, 5) : CUBES_ALL // (a phone blends every see-through layer the hard way: fewer of them)
+const CUBES = PHONE ? CUBES_ALL.slice(0, 5) : CUBES_ALL // (a phone blends every see-through layer the hard way: fewer of them)
 function Ice() {
   // in the drink it shows the drink all round it (lit crema above, espresso below), not the studio
-  const { geos, mat } = useIce({ refract: !LITE, thickness: 1.6, studio: false, tint: '#fbf6ef', surround: ['#f0cf9f', '#8a5128'] })
+  const { geos, mat } = useIce({ refract: !PHONE, thickness: 1.6, studio: false, tint: '#fbf6ef', surround: ['#f0cf9f', '#8a5128'] })
   const group = useRef<Group>(null)
   useFrame((st) => {
     const t = st.clock.elapsedTime
@@ -410,12 +410,12 @@ function Ice() {
 }
 
 // (phones: the camera ends up right among these, each a see-through layer over the next: fewer of them)
-const CUBES_HEAP = LITE ? HEAP.slice(0, 8) : HEAP
+const CUBES_HEAP = PHONE ? HEAP.slice(0, 8) : HEAP
 // The ice you see from outside: real clear cubes heaped on the drink (HEAP, ice.tsx). On arrival they drop in one
 // after another.
 function Heap() {
   // thin: the camera ends up right among these, where heavy refraction smears into stripes
-  const { geos, mat } = useIce({ refract: !LITE, thickness: 0.35, under: '#4a2c17' })
+  const { geos, mat } = useIce({ refract: !PHONE, thickness: 0.35, under: '#4a2c17' })
   const group = useRef<Group>(null)
   const drops = useRef(CUBES_HEAP.map(() => ({ y: 1.6, v: 0 })))
   useFrame((st, rawDt) => {
@@ -455,9 +455,9 @@ const ADRIFT_WIDE: [number, number, number, number][] = [
   [1.55, 2.2, -0.6, 0.34], [-1.05, 2.3, -0.4, 0.22], [1.35, 0.3, 0.6, 0.3], [-0.95, 0.05, 0.9, 0.24],
   [2.0, 1.35, -1.6, 0.26], [0.95, 2.55, -1.2, 0.2], [-2.6, -0.35, -0.8, 0.22], [-3.2, 2.7, -2.0, 0.24],
 ]
-const ADRIFT = LITE ? ADRIFT_ALL.slice(0, 5) : typeof innerWidth !== 'undefined' && innerWidth / innerHeight >= 1.1 ? ADRIFT_WIDE : ADRIFT_ALL
+const ADRIFT = PHONE ? ADRIFT_ALL.slice(0, 5) : typeof innerWidth !== 'undefined' && innerWidth / innerHeight >= 1.1 ? ADRIFT_WIDE : ADRIFT_ALL
 function Adrift() {
-  const { geos, mat } = useIce({ refract: !LITE, thickness: 0.3 })
+  const { geos, mat } = useIce({ refract: !PHONE, thickness: 0.3 })
   const group = useRef<Group>(null)
   useFrame((st) => {
     const t = st.clock.elapsedTime
@@ -487,7 +487,7 @@ function Adrift() {
 }
 
 // Fine bubbles rising through the whole drink; the ones near the camera stream past as you sink.
-const BUBBLES = LITE ? 110 : 520
+const BUBBLES = PHONE ? 110 : 520
 const lens = new Vector3()
 const bubbles = Array.from({ length: BUBBLES }, () => {
   const a = Math.random() * Math.PI * 2
@@ -736,7 +736,7 @@ function Warmup() {
         const t0 = performance.now()
         const go = () => {
           if (!alive) return
-          if (!RENDER && state.warm < 4 && performance.now() - t0 < 1500) return void requestAnimationFrame(go)
+          if (state.warm < 4 && performance.now() - t0 < 1500) return void requestAnimationFrame(go)
           state.ready = true
           state.born = clock.elapsedTime
           window.dispatchEvent(new Event('hg-ready')) // (the page lifts its loader)
@@ -757,7 +757,6 @@ function Pump() {
   const invalidate = useThree((st) => st.invalidate)
   const get = useThree((st) => st.get)
   useEffect(() => {
-    if (RENDER) return // (the frames are stepped by hand: render.ts)
     // Runs every frame while the dive is on screen, not at all once it's scrolled past. (It used to ask for one frame
     // at a time from gsap's ticker; that raced the renderer's own loop and drew only every other frame: 30 a second.)
     const tick = () => {
@@ -774,17 +773,14 @@ function Pump() {
 }
 
 export default function Dive() {
-  const [dpr, setDpr] = useState(() => (RENDER ? 2 : Math.min(devicePixelRatio, LITE ? 1.6 : 1.5))) // (?render: a 360×780 window gives the frames' 720×1560)
+  const [dpr, setDpr] = useState(() => Math.min(devicePixelRatio, PHONE ? 1.6 : 1.5))
   useEffect(() => {
     res.set = setDpr
   }, [])
   return (
     <div className="absolute inset-0">
-      <Canvas style={{ pointerEvents: 'none' }} frameloop={RENDER ? 'never' : 'always'} dpr={dpr} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
-        onCreated={({ gl }) => {
-          gl.transmissionResolutionScale = 0.5 // what the ice refracts is soft anyway: half the cost
-          gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); window.dispatchEvent(new Event('hg-lost')) }) // (the page falls back to its stills)
-        }}
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="always" dpr={dpr} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
+        onCreated={({ gl }) => (gl.transmissionResolutionScale = 0.5)} // what the ice refracts is soft anyway: half the cost
       >
         <Pump />
         <PointerRig />

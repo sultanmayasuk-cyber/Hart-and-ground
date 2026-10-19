@@ -28,7 +28,7 @@ function Door() {
 
 export default function Menu() {
   return (
-    <section id="menu" className={`menu-sec latte relative z-[6] ${PHONE ? 'h-[220svh]' : 'h-[320svh]'}`}>
+    <section id="menu" className={`menu-sec latte relative z-[6] ${PHONE ? 'h-[280svh]' : 'h-[320svh]'}`}>
       <div className="sticky top-0 h-lvh overflow-hidden">
         {/* without 3D (no WebGL, reduced motion): the cups' photograph stands where the live ones would */}
         <img className="menu-still" src="/cups-still.webp" alt="A flat white and an iced matcha in Hart & Ground cups" onLoad={() => ScrollTrigger.refresh()} />

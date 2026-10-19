@@ -1,4 +1,3 @@
-import { PHONE } from '../env'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef } from 'react'
 import LogoLockup from '../LogoLockup'
@@ -22,7 +21,7 @@ export default function Story() {
     return () => st.kill()
   }, [])
   return (
-    <section id="story" ref={wrap} className={`story relative ${PHONE ? 'h-[260svh]' : 'h-[340svh]'}`}>
+    <section id="story" ref={wrap} className="story relative h-[340svh]">
       <div className="story-stage">
         <div className="story-panel">
           <div className="story-art">

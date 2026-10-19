@@ -9,7 +9,6 @@ import { CAM_Z, DRACO, HERO_FOV } from './cups'
 import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { page, VIEW_H } from './scroll'
-import { REDUCED, RENDER } from '../env'
 import PaperCup from './PaperCup'
 import IceHeap from './IceHeap'
 import Straw from './Straw'
@@ -27,8 +26,8 @@ const FLOOR = -VIEW_H * 0.42
 const CAM_HEIGHT = 1.35 // raised a little, looking down into the cups (the ice shows)
 const SPRING = 14 // critically damped: weight, no wobble
 // dev: ?snap puts the cups exactly on their marks (no springs), for checking frames one by one
-const SNAP = import.meta.env.DEV && (!!RENDER || new URLSearchParams(location.search).has('snap')) // (?render takes the phones' frames this way)
-const STILL = REDUCED || !!RENDER
+const SNAP = import.meta.env.DEV && new URLSearchParams(location.search).has('snap')
+const STILL = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
 const clamp01 = (x: number) => clamp(x, 0, 1)
 const smooth = (x: number) => x * x * (3 - 2 * x)
@@ -241,7 +240,7 @@ function Warmup() {
     })
     const dbg = (window as unknown as { __cups?: Record<string, unknown> })
     dbg.__cups = { stage, where, err: '' }
-    Promise.race([gl.compileAsync(scene, camera), new Promise((r) => setTimeout(r, 3000))]) // (never wait on the driver for ever)
+    gl.compileAsync(scene, camera)
       .catch((e: unknown) => { dbg.__cups!.err = String(e) })
       .finally(() => {
         if (alive) stage.ready = true
@@ -262,7 +261,6 @@ function Pump() {
   const invalidate = useThree((st) => st.invalidate)
   const get = useThree((st) => st.get)
   useEffect(() => {
-    if (RENDER) return // (the frames are stepped by hand: render.ts)
     let rest = 0 // frames both cups have been out of sight below
     const tick = () => {
       const below = FLOOR - VIEW_H * 1.2
@@ -288,9 +286,7 @@ function Pump() {
 export default function Landing() {
   return (
     <div className="pointer-events-none fixed inset-0 z-10">
-      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={RENDER ? 2 : [1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}
-        onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); window.dispatchEvent(new Event('hg-lost')) })} // (the page falls back to its stills)
-      >
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={[1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}>
         <Pump />
         <Layout />
         <PointerRig />

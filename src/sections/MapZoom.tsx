@@ -1,4 +1,3 @@
-import { PHONE } from '../env'
 import { onFrame } from '../frame'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef } from 'react'
@@ -248,7 +247,7 @@ export default function MapZoom() {
   }, [])
 
   return (
-    <section id="visit" ref={wrap} className={`visit relative ${PHONE ? 'h-[320svh]' : 'h-[420svh]'}`}>
+    <section id="visit" ref={wrap} className="visit relative h-[420svh]">
       <div className="sticky top-0 h-lvh overflow-hidden">
         <canvas ref={canvas} className="absolute inset-0 h-full w-full" />
         <span ref={ring} className="pin-ring" aria-hidden />
