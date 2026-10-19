@@ -7,7 +7,9 @@ export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers
 export const WEBGL = (() => {
   try {
     const c = document.createElement('canvas')
-    return !!(c.getContext('webgl2') || c.getContext('webgl'))
+    const gl = c.getContext('webgl2') // (three r186 needs WebGL2)
+    gl?.getExtension('WEBGL_lose_context')?.loseContext() // (the probe mustn't hold a context of its own)
+    return !!gl
   } catch {
     return false
   }

@@ -9,6 +9,7 @@ import { CAM_Z, DRACO, HERO_FOV } from './cups'
 import { damp, pointer } from './pointer'
 import { CameraRig, PointerRig } from './rigs'
 import { page, VIEW_H } from './scroll'
+import { PHONE } from '../env'
 import PaperCup from './PaperCup'
 import IceHeap from './IceHeap'
 import Straw from './Straw'
@@ -240,7 +241,7 @@ function Warmup() {
     })
     const dbg = (window as unknown as { __cups?: Record<string, unknown> })
     dbg.__cups = { stage, where, err: '' }
-    gl.compileAsync(scene, camera)
+    Promise.race([gl.compileAsync(scene, camera), new Promise((r) => setTimeout(r, 3000))]) // (never wait on the driver for ever)
       .catch((e: unknown) => { dbg.__cups!.err = String(e) })
       .finally(() => {
         if (alive) stage.ready = true
@@ -275,6 +276,10 @@ function Pump() {
       if (get().frameloop !== loop) {
         setFrameloop(loop) // (every frame while they're on screen, none otherwise)
         if (want) invalidate()
+        // and the layer itself goes: a full-screen transparent canvas fixed over the page is composited into every
+        // scrolled frame even when nothing is drawn on it (a phone paid for that through the whole story and map)
+        const layer = get().gl.domElement.closest<HTMLElement>('.cups-layer')
+        if (layer) layer.style.visibility = want ? '' : 'hidden'
       }
     }
     return onFrame(tick)
@@ -285,8 +290,10 @@ function Pump() {
 // Transparent canvas fixed over the page (under the header), so the cups can stand in front of the copy's edges.
 export default function Landing() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-10">
-      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={[1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}>
+    <div className="cups-layer pointer-events-none fixed inset-0 z-10" style={{ visibility: 'hidden' }}>
+      <Canvas style={{ pointerEvents: 'none' }} frameloop="never" dpr={[1, 1.5]} camera={{ position: [0, CAM_HEIGHT, CAM_Z], fov: HERO_FOV }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: SNAP }}
+        onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); window.dispatchEvent(new Event('hg-lost')) })} // (the page falls back to its stills)
+      >
         <Pump />
         <Layout />
         <PointerRig />
@@ -301,7 +308,7 @@ export default function Landing() {
           <Cup which="matcha" />
           <Warmup />
         </Suspense>
-        <Environment resolution={256}>
+        <Environment resolution={PHONE ? 64 : 256}>
           <Lightformer intensity={2.2} position={[0, 5, 0]} scale={[10, 3, 1]} rotation-x={Math.PI / 2} color="#fff7ec" />
           <Lightformer intensity={1.8} color="#fff0d8" position={[-6, 2, 3]} scale={[1.5, 6, 1]} />
           <Lightformer intensity={1.2} color="#e8f0ff" position={[6, 1, 2]} scale={[1.5, 6, 1]} />

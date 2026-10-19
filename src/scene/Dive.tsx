@@ -705,7 +705,7 @@ function Worlds() {
         <Backdrop />
         <Cup />
         <Adrift />
-        <ContactShadows frames={40} position={[0, 0.003, 0]} scale={9} blur={2.6} far={2.4} opacity={0.4} resolution={512} color="#3a1730" />
+        <ContactShadows frames={40} position={[0, 0.003, 0]} scale={9} blur={2.6} far={2.4} opacity={0.4} resolution={PHONE ? 256 : 512} color="#3a1730" />
       </group>
       <group ref={inn} position={O}>
         <Drink />
@@ -780,7 +780,10 @@ export default function Dive() {
   return (
     <div className="absolute inset-0">
       <Canvas style={{ pointerEvents: 'none' }} frameloop="always" dpr={dpr} camera={{ position: [0, 1.4, 6.4], fov: 30, near: 0.03, far: 200 }} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: SNAP }} // (dev ?snap: lets a still be saved off the canvas)
-        onCreated={({ gl }) => (gl.transmissionResolutionScale = 0.5)} // what the ice refracts is soft anyway: half the cost
+        onCreated={({ gl }) => {
+          gl.transmissionResolutionScale = 0.5 // what the ice refracts is soft anyway: half the cost
+          gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); window.dispatchEvent(new Event('hg-lost')) }) // (the page falls back to its stills)
+        }}
       >
         <Pump />
         <PointerRig />
@@ -793,7 +796,7 @@ export default function Dive() {
           <Warmup />
         </Suspense>
         <Veil />
-        <Environment resolution={256}>
+        <Environment resolution={PHONE ? 64 : 256}>
           <Lightformer intensity={2.2} position={[0, 5, 0]} scale={[10, 3, 1]} rotation-x={Math.PI / 2} color="#fff7ec" />
           <Lightformer intensity={1.8} color="#fff0d8" position={[-6, 2, 3]} scale={[1.5, 6, 1]} />
           <Lightformer intensity={1.2} color="#e8f0ff" position={[6, 1, 2]} scale={[1.5, 6, 1]} />

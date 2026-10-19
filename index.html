@@ -45,6 +45,11 @@
     </script>
   </head>
   <body>
+    <!-- the hero cup and its decoder start coming down before any script has parsed (scene/Dive.tsx preloads them too) -->
+    <link rel="preload" href="/models/coffee.glb" as="fetch" crossorigin />
+    <link rel="preload" href="/draco/draco_decoder.wasm" as="fetch" crossorigin />
+    <!-- the loader from the first paint: the app's own takes over the moment it mounts (src/App.tsx removes this one) -->
+    <div class="loader" id="boot" aria-hidden="true"><span class="stag"></span></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

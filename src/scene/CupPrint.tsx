@@ -1,5 +1,11 @@
 import { useEffect, useMemo } from 'react'
 import { BufferAttribute, BufferGeometry, CanvasTexture, EquirectangularReflectionMapping, SRGBColorSpace } from 'three'
+import { PHONE } from '../env'
+
+// a phone's screen never shows the print at more than a few hundred pixels: half-size canvases there (a quarter of the
+// pixels to draw and upload, 2026-10-19)
+const LOGO = PHONE ? 512 : 1024
+const LINE = PHONE ? 1024 : 2048
 
 // The cup models (Meshy) are unit height, base at y = 0, with a straight tapered wall. Their baked logo came out chopped
 // across the texture atlas, so it's painted out of the texture and printed here instead.
@@ -56,37 +62,38 @@ function useLogo(kind: CupKind) {
   return useMemo(() => {
     const { radius, ink, logo: [y0, y1] } = CUPS[kind]
     const geo = band(radius, y0, y1, (y1 - y0) / radius((y0 + y1) / 2)) // the artwork is square
-    const { canvas, tex } = canvasTexture(1024, 1024)
+    const { canvas, tex } = canvasTexture(LOGO, LOGO)
     const img = new Image()
     img.onload = () => {
       const g = canvas.getContext('2d')!
-      g.drawImage(img, 0, 0, 1024, 1024)
+      g.drawImage(img, 0, 0, LOGO, LOGO)
       g.globalCompositeOperation = 'source-in' // (the artwork is drawn in burgundy; recolour it)
       if (CUPS[kind].foil) {
         // foil: the gold's own tone, from amber to bright across the print, then a brushed mottle laid over it
         // (the shine itself comes from the metal mirroring the studio light, see FOIL_ENV)
-        const grad = g.createLinearGradient(0, 0, 1024, 1024)
+        const grad = g.createLinearGradient(0, 0, LOGO, LOGO)
         grad.addColorStop(0, '#f0cc6a')
         grad.addColorStop(0.35, ink)
         grad.addColorStop(0.6, '#e9c257')
         grad.addColorStop(1, '#b07f2a')
         g.fillStyle = grad
-        g.fillRect(0, 0, 1024, 1024)
+        g.fillRect(0, 0, LOGO, LOGO)
         g.globalCompositeOperation = 'source-atop'
         let seed = 7
         const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+        const k = LOGO / 1024
         for (let i = 0; i < 900; i++) {
-          const x = rnd() * 1024
-          const y = rnd() * 1024
-          const w = 8 + rnd() * 60
+          const x = rnd() * LOGO
+          const y = rnd() * LOGO
+          const w = (8 + rnd() * 60) * k
           g.fillStyle = rnd() < 0.5 ? `rgba(255, 236, 170, ${0.05 + rnd() * 0.12})` : `rgba(120, 70, 10, ${0.04 + rnd() * 0.1})`
           g.beginPath()
-          g.ellipse(x, y, w, 3 + rnd() * 6, -0.6, 0, Math.PI * 2)
+          g.ellipse(x, y, w, (3 + rnd() * 6) * k, -0.6, 0, Math.PI * 2)
           g.fill()
         }
       } else {
         g.fillStyle = ink
-        g.fillRect(0, 0, 1024, 1024)
+        g.fillRect(0, 0, LOGO, LOGO)
       }
       tex.needsUpdate = true
     }
@@ -101,7 +108,7 @@ function useLine(kind: CupKind, text: string) {
     const { radius: wallRadius, ink, line: [y0, y1] } = CUPS[kind]
     const span = 1.4
     const geo = band(wallRadius, y0, y1, span)
-    const W = 2048
+    const W = LINE
     const H = Math.round((W * (y1 - y0)) / (wallRadius((y0 + y1) / 2) * span))
     const { canvas, tex } = canvasTexture(W, H)
     const draw = () => {
@@ -125,8 +132,9 @@ function useLine(kind: CupKind, text: string) {
 // What the foil mirrors: a product-studio sky of its own, bright softboxes on a warm dark room, so the metal has
 // something to shine with (the page's real environment is too dim from the cup's side and a true metal went muddy).
 // Drawn once, as an equirectangular canvas.
-function useFoilEnv() {
+function useFoilEnv(foil: boolean) {
   return useMemo(() => {
+    if (!foil) return null // (the ink has no use for it: three cups built it, one used it)
     const canvas = document.createElement('canvas')
     canvas.width = 512
     canvas.height = 256
@@ -158,13 +166,13 @@ function useFoilEnv() {
     tex.mapping = EquirectangularReflectionMapping
     tex.colorSpace = SRGBColorSpace
     return tex
-  }, [])
+  }, [foil])
 }
 
 export default function CupPrint({ kind = 'cold' }: { kind?: CupKind }) {
   const logo = useLogo(kind)
   const line = useLine(kind, 'Take the long way home.')
-  const foilEnv = useFoilEnv()
+  const foilEnv = useFoilEnv(CUPS[kind].foil)
   // ink soaks into the clear cup's print; foil is a metal, mirroring its own studio light with a brushed sheen
   const finish = CUPS[kind].foil ? { metalness: 1, roughness: 0.27, envMap: foilEnv, envMapIntensity: 1.9 } : { roughness: 0.45 }
   useEffect(
@@ -173,7 +181,7 @@ export default function CupPrint({ kind = 'cold' }: { kind?: CupKind }) {
       logo.tex.dispose()
       line.geo.dispose()
       line.tex.dispose()
-      foilEnv.dispose()
+      foilEnv?.dispose()
     },
     [logo, line, foilEnv],
   )
